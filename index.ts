@@ -6,6 +6,10 @@ const PORT = 8000;
 
 app.use("/", routes);
 
+app.get("/testing", (req, res) => {
+  res.send("Succesfully run!");
+});
+
 app.listen(PORT, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
 });
