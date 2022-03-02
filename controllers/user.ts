@@ -60,6 +60,8 @@ const register = (req: Request, res: Response, next: NextFunction) => {
 const login = (req: Request, res: Response, next: NextFunction) => {
     let { username, password } = req.body;
 
+    console.log(username,password);
+
     let query = `SELECT * FROM users WHERE username = '${username}'`;
 
     Connect()
