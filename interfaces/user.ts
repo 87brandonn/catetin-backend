@@ -1,5 +1,8 @@
 export default interface IUser {
-    _id: number;
+    user_id: number;
     username: string;
     password: string;
+    nama_toko: string;
+    created_at: string;
+    updated_at: string;
 }
