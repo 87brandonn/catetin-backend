@@ -312,9 +312,19 @@ const getProfile = (req: Request, res: Response, next: NextFunction) => {
         .then((connection) => {
             Query<IUser[]>(connection, query)
                 .then((users) => {
-                    return res.status(200).json({
-                        users,
-                    });
+                    if (users[0].username != null) {
+                        return res.status(200).json({
+                            username : users[0].username,
+                            nama_toko : users[0].nama_toko,
+                        });
+                    }
+                    else {
+                        return res.status(200).json({
+                            username : users[0].email,
+                            nama_toko : users[0].nama_toko,
+                        });
+                    }
+                    
                 })
                 .catch((error) => {
                     logging.error(NAMESPACE, error.message, error);
