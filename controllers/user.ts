@@ -51,9 +51,21 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
             .then((connection) => {
                 Query<IMySQLResult>(connection, query)
                     .then((result) => {
-                        logging.info(NAMESPACE, `User with id ${result.insertId} inserted.`);
-
-                        return res.status(201).json(result);
+                        signJWT(result.insertId, (_error, token) => {
+                            if (_error) {
+                              return res.status(401).json({
+                                message: 'Unable to Sign JWT',
+                                error: _error,
+                              });
+                            } else if (token) {
+                              console.log('have token');
+                              res.status(200).json({
+                                message: 'Auth Successful',
+                                token,
+                                user_id: result.insertId,
+                              });
+                            }
+                          });
                     })
                     .catch((error) => {
                         logging.error(NAMESPACE, error.message, error);
