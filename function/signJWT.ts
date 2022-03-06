@@ -1,22 +1,23 @@
 import jwt from 'jsonwebtoken';
 import config from '../config/config';
 import logging from '../config/logging';
+import user from '../controllers/user';
 import IUser from '../interfaces/user';
 
 const NAMESPACE = 'Auth';
 
-const signJWT = (user: IUser, callback: (error: Error | null, token: string | null) => void): void => {
+const signJWT = (userId: number, callback: (error: Error | null, token: string | null) => void): void => {
     var timeSinceEpoch = new Date().getTime();
     var expirationTime = timeSinceEpoch + Number(config.server.token.expireTime) * 100000;
     var expirationTimeInSeconds = Math.floor(expirationTime / 1000);
     
 
-    logging.info(NAMESPACE, `Attempting to sign token for ${user.user_id}`);
+    logging.info(NAMESPACE, `Attempting to sign token for ${userId}`);
 
     try {
         jwt.sign(
             {
-                user_id: user.user_id
+                user_id: userId
             },
             config.server.token.secret,
             {
