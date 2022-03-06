@@ -27,7 +27,7 @@ const register = (req: Request, res: Response, next: NextFunction) => {
             });
         }
 
-        let query = `INSERT INTO users (username, password) VALUES ("${username}", "${hash}")`;
+    let query = `INSERT INTO users (username, password) VALUES ("${username}", "${hash}")`;
 
         Connect()
             .then((connection) => {
@@ -61,7 +61,6 @@ const registerGmail = (req: Request, res: Response, next: NextFunction) => {
     let { email } = req.body;
 
     
-
     let query = `INSERT INTO users (email) VALUES ("${email}")`;
 
     Connect()
@@ -104,6 +103,11 @@ const login = (req: Request, res: Response, next: NextFunction) => {
         .then((connection) => {
             Query<IUser[]>(connection, query)
                 .then((users) => {
+                    if (users.length == 0){
+                        return res.status(400).json({
+                            message: 'User not found'
+                        });
+                    } 
                     bcryptjs.compare(password, users[0].password, (error, result) => {
                         if (error || !result) {
                             return res.status(401).json({
@@ -156,18 +160,25 @@ const loginGmail = (req: Request, res: Response, next: NextFunction) => {
         .then((connection) => {
             Query<IUser[]>(connection, query)
                 .then((users) => {
-                    
+                    if (users.length == 0) {
+                        return res.status(400).json({
+                            message : 'User not found',
+                            code : 400
+                        });
+                    }
                     signJWT(users[0], (_error, token) => {
                         if (_error) {
                             return res.status(401).json({
                                 message: 'Unable to Sign JWT',
+                                code: 401,
                                 error: _error
                             });
                         } else if (token) {
                             return res.status(200).json({
                                 message: 'Auth Successful',
                                 token,
-                                user: users[0]
+                                user: users[0],
+                                code: 200
                             });
                         }
                     });
