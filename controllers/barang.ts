@@ -10,10 +10,10 @@ import IBarang from '../interfaces/barang';
 const NAMESPACE = 'Barang';
 
 const insertBarang = (req: Request, res: Response, next: NextFunction) => {
-    let { nama_barang, stok } = req.body;
+    let { nama_barang, stok, harga } = req.body;
 
     let user_id = res.locals.jwt.user_id
-    let query = `INSERT INTO barang (user_id, nama_barang, stok) VALUES (${user_id} ,"${nama_barang}", ${stok})`;
+    let query = `INSERT INTO barang (user_id, nama_barang, stok, harga) VALUES (${user_id} ,"${nama_barang}", ${stok}, ${harga})`;
 
     Connect()
         .then((connection) => {
@@ -44,9 +44,9 @@ const insertBarang = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const updateBarang = (req: Request, res: Response, next: NextFunction) => {
-    let { barang_id, nama_barang, stok } = req.body;
+    let { barang_id, nama_barang, stok, harga } = req.body;
 
-    let query = `UPDATE barang SET nama_barang = "${nama_barang}", stok = ${stok} WHERE barang_id = ${barang_id}`;
+    let query = `UPDATE barang SET nama_barang = "${nama_barang}", stok = ${stok}, harga = ${harga} WHERE barang_id = ${barang_id}`;
 
     Connect()
         .then((connection) => {
