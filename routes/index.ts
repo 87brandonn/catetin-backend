@@ -15,5 +15,7 @@ routes.post("/insert/barang", extractJWT, controllerBarang.insertBarang)
 routes.post("/update/barang", extractJWT, controllerBarang.updateBarang)
 routes.get("/get/barang", extractJWT, controllerBarang.getListBarang)
 routes.post("/insert/transaksi", extractJWT, controllerTransaksi.insertTransaksi)
+routes.get("/get/transaksi", extractJWT, controllerTransaksi.getTransaksi)
+routes.post("/update/transaksi", extractJWT, controllerTransaksi.updateTransaksi)
 
 export default routes;
