@@ -78,7 +78,13 @@ const insertTransaksi = async (req: Request, res: Response, next: NextFunction) 
 const getTransaksi = async (req: Request, res: Response, next: NextFunction) => {
     
     let user_id = res.locals.jwt.user_id
-    let query = `SELECT * from transaksi WHERE user_id = ${user_id}`;
+    var query = `SELECT * from transaksi WHERE user_id = ${user_id}`;
+    let filter_tipe_transaksi = req.query.tipe_transaksi
+
+    if(filter_tipe_transaksi != undefined){
+        query = query.concat(` AND tipe_transaksi = ${filter_tipe_transaksi}`)
+    }
+    
     try {
         var connection = await Connect();
         var result = await Query<ITransaksi[]>(connection, query);
@@ -154,5 +160,7 @@ const updateTransaksi = async (req: Request, res: Response, next: NextFunction) 
         message : "success"
     })
 };
+
+// delete transaksi
 
 export default {insertTransaksi, getTransaksi, updateTransaksi};

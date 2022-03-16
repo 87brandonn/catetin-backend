@@ -74,10 +74,27 @@ const updateBarang = (req: Request, res: Response, next: NextFunction) => {
         });
     
 };
-
+// filter
 const getListBarang = (req: Request, res: Response, next: NextFunction) => {
     let user_id = res.locals.jwt.user_id
-    let query = `SELECT * FROM barang WHERE user_id = ${user_id}`;
+    var query = `SELECT * FROM barang WHERE user_id = ${user_id}`;
+    let sort_stock = req.query.sort_stock
+    let sort_harga = req.query.sort_harga
+    let filter_nama_barang = req.query.nama_barang
+    console.log(sort_stock)
+    console.log(filter_nama_barang)
+    if(filter_nama_barang != undefined) {
+        query = query.concat(` AND nama_barang LIKE '%${filter_nama_barang}%'`)
+    }
+
+    if(sort_harga != undefined) {
+        query = query.concat(` ORDER BY harga ${sort_harga}`)
+    }
+
+    // filter
+    if (sort_stock != undefined && sort_harga == undefined) {
+        query = query.concat(` ORDER BY harga ${sort_stock}`)
+    }
 
     Connect()
         .then((connection) => {
