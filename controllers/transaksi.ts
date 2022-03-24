@@ -84,7 +84,9 @@ const getTransaksi = async (req: Request, res: Response, next: NextFunction) => 
     if(filter_tipe_transaksi != undefined){
         query = query.concat(` AND tipe_transaksi = ${filter_tipe_transaksi}`)
     }
-    
+
+    // sort tanggal ?
+    // testing
     try {
         var connection = await Connect();
         var result = await Query<ITransaksi[]>(connection, query);
