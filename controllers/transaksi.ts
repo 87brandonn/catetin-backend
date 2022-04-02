@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import pool from "../config/mysql";
+import { IBarangPayload } from "../interfaces/barang";
 
-const NAMESPACE = "Transaksi";
 const insertTransaksi = async (
   req: Request,
   res: Response,
@@ -21,13 +21,12 @@ const insertTransaksi = async (
       error,
     });
   }
-  console.log(tipe_transaksi == 3);
+
   if (tipe_transaksi == 3 || tipe_transaksi == 4) {
-    console.log("test");
-    barang.forEach(async (element: any) => {
+    barang.forEach(async (element: IBarangPayload) => {
       try {
         var queryDetail = `INSERT INTO transaksi_detail (transaksi_id, barang_id, amount) VALUES (${transaksi_id}, ${element.barang_id}, ${element.amount})`;
-        const responseInsert = pool.query(queryDetail);
+        await pool.query(queryDetail);
       } catch (error: any) {
         return res.status(500).json({
           message: error.message,
@@ -35,13 +34,11 @@ const insertTransaksi = async (
         });
       }
     });
-    // update barang
     if (tipe_transaksi == 3) {
-      barang.forEach(async (element: any) => {
+      barang.forEach(async (element: IBarangPayload) => {
         try {
           var queryUpdate = `UPDATE barang SET stok = stok + ${element.amount} WHERE barang_id = ${element.barang_id}`;
-
-          var responseUpdate = pool.query(queryUpdate);
+          await pool.query(queryUpdate);
         } catch (error: any) {
           return res.status(500).json({
             message: error.message,
@@ -51,10 +48,10 @@ const insertTransaksi = async (
       });
     }
     if (tipe_transaksi == 4) {
-      barang.forEach(async (element: any) => {
+      barang.forEach(async (element: IBarangPayload) => {
         try {
           var queryUpdate = `UPDATE barang SET stok = stok - ${element.amount} WHERE barang_id = ${element.barang_id}`;
-          var responseUpdate = pool.query(queryUpdate);
+          await pool.query(queryUpdate);
         } catch (error: any) {
           return res.status(500).json({
             message: error.message,
@@ -82,8 +79,6 @@ const getTransaksi = async (
     query = query.concat(` AND tipe_transaksi = ${filter_tipe_transaksi}`);
   }
 
-  // sort tanggal ?
-  // testing
   try {
     var result = await pool.query(query);
   } catch (error: any) {
@@ -102,11 +97,9 @@ const updateTransaksi = async (
 ) => {
   let { title, tipe_transaksi, tanggal, total, barang, notes, transaksi_id } =
     req.body;
-
-  let user_id = res.locals.jwt.user_id;
   let query = `UPDATE transaksi SET title = "${title}", tipe_transaksi = ${tipe_transaksi}, tanggal = "${tanggal}", nominal_transaksi = ${total}, notes = "${notes}" WHERE transaksi_id = ${transaksi_id}`;
   try {
-    var responseInsert = await pool.query(query);
+    await pool.query(query);
   } catch (error: any) {
     return res.status(500).json({
       message: error.message,
@@ -115,11 +108,10 @@ const updateTransaksi = async (
   }
 
   if (tipe_transaksi == 3 || tipe_transaksi == 4) {
-    barang.forEach(async (element: any) => {
+    barang.forEach(async (element: IBarangPayload) => {
       try {
         var queryDetail = `UPDATE transaksi_detail SET amount = ${element.new} WHERE barang_id = ${element.barang_id} AND transaksi_id = ${transaksi_id}`;
-
-        const responseInsert = pool.query(queryDetail);
+        await pool.query(queryDetail);
       } catch (error: any) {
         return res.status(500).json({
           message: error.message,
@@ -127,13 +119,11 @@ const updateTransaksi = async (
         });
       }
     });
-    // update barang
     if (tipe_transaksi == 3) {
-      barang.forEach(async (element: any) => {
+      barang.forEach(async (element: IBarangPayload) => {
         try {
           var queryUpdate = `UPDATE barang SET stok = stok + ${element.new} - ${element.old} WHERE barang_id = ${element.barang_id}`;
-
-          var responseUpdate = pool.query(queryUpdate);
+          await pool.query(queryUpdate);
         } catch (error: any) {
           return res.status(500).json({
             message: error.message,
@@ -143,11 +133,10 @@ const updateTransaksi = async (
       });
     }
     if (tipe_transaksi == 4) {
-      barang.forEach(async (element: any) => {
+      barang.forEach(async (element: IBarangPayload) => {
         try {
           var queryUpdate = `UPDATE barang SET stok = stok - ${element.new} + ${element.old} WHERE barang_id = ${element.barang_id}`;
-
-          var responseUpdate = pool.query(queryUpdate);
+          await pool.query(queryUpdate);
         } catch (error: any) {
           return res.status(500).json({
             message: error.message,
@@ -161,7 +150,5 @@ const updateTransaksi = async (
     message: "success",
   });
 };
-
-// delete transaksi
 
 export default { insertTransaksi, getTransaksi, updateTransaksi };

@@ -6,3 +6,9 @@ export default interface IBarang {
   created_at: string;
   updated_at: string;
 }
+
+export interface IBarangPayload extends IBarang {
+  amount: number;
+  new: number;
+  old: number;
+}

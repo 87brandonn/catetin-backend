@@ -3,13 +3,15 @@ import { NextFunction, Request, Response } from "express";
 import logging from "../config/logging";
 import pool from "../config/mysql";
 import signJWT from "../function/signJWT";
+import IMySQLResult from "../interfaces/result";
+import IUser from "../interfaces/user";
 import { generateEditQuery, serializePayloadtoQuery } from "./../utils/index";
 
 const NAMESPACE = "User";
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
   logging.info(NAMESPACE, "Token validated, user authorized.");
-  console.log(res.locals.jwt.user_id);
+
   return res.status(200).json({
     message: `Token(s) validated with user id : ${res.locals.jwt.user_id} `,
   });
@@ -47,7 +49,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 
     pool
       .query(query)
-      .then((result: any) => {
+      .then((result: IMySQLResult) => {
         signJWT(result.insertId, (_error, token) => {
           if (_error) {
             return res.status(401).json({
@@ -55,7 +57,6 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
               error: _error,
             });
           } else if (token) {
-            console.log("have token");
             res.status(200).json({
               message: "Auth Successful",
               token,
@@ -95,7 +96,6 @@ const registerGmail = async (
             error: _error,
           });
         } else if (token) {
-          console.log("have token");
           res.status(200).json({
             message: "Auth Successful",
             token,
@@ -113,7 +113,7 @@ const registerGmail = async (
   }
   pool
     .query(query)
-    .then((result: any) => {
+    .then((result: IMySQLResult) => {
       logging.info(NAMESPACE, `User with id ${result.insertId} inserted.`);
       signJWT(result.insertId, (_error, token) => {
         if (_error) {
@@ -147,7 +147,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 
   pool
     .query(query)
-    .then((users: any) => {
+    .then((users: IUser[]) => {
       if (users.length == 0) {
         return res.status(400).json({
           message: "User not found",
@@ -193,7 +193,7 @@ const loginGmail = (req: Request, res: Response, next: NextFunction) => {
 
   pool
     .query(query)
-    .then((users: any) => {
+    .then((users: IUser[]) => {
       if (users.length == 0) {
         return res.status(400).json({
           message: "User not found",
@@ -217,7 +217,6 @@ const loginGmail = (req: Request, res: Response, next: NextFunction) => {
     })
     .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
-
       return res.status(500).json({
         message: error.message,
         error,
@@ -226,11 +225,11 @@ const loginGmail = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
-  let query = `SELECT user_id, username FROM users`;
+  let query = `SELECT * FROM users`;
 
   pool
     .query(query)
-    .then((users: any) => {
+    .then((users: IUser[]) => {
       return res.status(200).json({
         users,
         count: users.length,
@@ -238,7 +237,6 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
     })
     .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
-
       return res.status(500).json({
         message: error.message,
         error,
@@ -285,7 +283,7 @@ const updateProfile = (req: Request, res: Response, next: NextFunction) => {
 
   pool
     .query(query)
-    .then((result: any) => {
+    .then((result: IMySQLResult) => {
       return res.status(201).json({
         message: "Nama toko updated",
       });
