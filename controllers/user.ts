@@ -1,11 +1,9 @@
-import { generateEditQuery, serializePayloadtoQuery } from "./../utils/index";
-import { NextFunction, Request, Response } from "express";
 import bcryptjs from "bcryptjs";
+import { NextFunction, Request, Response } from "express";
 import logging from "../config/logging";
+import pool from "../config/mysql";
 import signJWT from "../function/signJWT";
-import { Connect, Query } from "../config/mysql";
-import IUser from "../interfaces/user";
-import IMySQLResult from "../interfaces/result";
+import { generateEditQuery, serializePayloadtoQuery } from "./../utils/index";
 
 const NAMESPACE = "User";
 
@@ -23,8 +21,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
   let queryGet = `SELECT * FROM users WHERE username = '${username}'`;
 
   try {
-    const connection = Connect();
-    const users = await Query<IUser[]>(connection, queryGet);
+    const users = await pool.query(queryGet);
     if (users.length != 0) {
       res.status(400).json({
         message: "Username is used",
@@ -47,10 +44,10 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     }
 
     let query = `INSERT INTO users (username, password) VALUES ("${username}", "${hash}")`;
-    const connection = Connect();
 
-    Query<IMySQLResult>(connection, query)
-      .then((result) => {
+    pool
+      .query(query)
+      .then((result: any) => {
         signJWT(result.insertId, (_error, token) => {
           if (_error) {
             return res.status(401).json({
@@ -67,7 +64,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
           }
         });
       })
-      .catch((error) => {
+      .catch((error: any) => {
         logging.error(NAMESPACE, error.message, error);
 
         return res.status(500).json({
@@ -87,10 +84,9 @@ const registerGmail = async (
 
   let query = `INSERT INTO users (email) VALUES ("${email}")`;
   let queryGet = `SELECT * FROM users WHERE email = '${email}'`;
-  const connection = Connect();
 
   try {
-    const users = await Query<IUser[]>(connection, queryGet);
+    const users = await pool.query(queryGet);
     if (users.length != 0) {
       signJWT(users[0].user_id, (_error, token) => {
         if (_error) {
@@ -115,8 +111,9 @@ const registerGmail = async (
       error,
     });
   }
-  Query<IMySQLResult>(connection, query)
-    .then((result) => {
+  pool
+    .query(query)
+    .then((result: any) => {
       logging.info(NAMESPACE, `User with id ${result.insertId} inserted.`);
       signJWT(result.insertId, (_error, token) => {
         if (_error) {
@@ -133,7 +130,7 @@ const registerGmail = async (
         }
       });
     })
-    .catch((error) => {
+    .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
 
       return res.status(500).json({
@@ -147,10 +144,10 @@ const login = (req: Request, res: Response, next: NextFunction) => {
   let { username, password } = req.body;
 
   let query = `SELECT * FROM users WHERE username = '${username}'`;
-  const connection = Connect();
 
-  Query<IUser[]>(connection, query)
-    .then((users) => {
+  pool
+    .query(query)
+    .then((users: any) => {
       if (users.length == 0) {
         return res.status(400).json({
           message: "User not found",
@@ -179,7 +176,7 @@ const login = (req: Request, res: Response, next: NextFunction) => {
         }
       });
     })
-    .catch((error) => {
+    .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
 
       return res.status(500).json({
@@ -193,10 +190,10 @@ const loginGmail = (req: Request, res: Response, next: NextFunction) => {
   let { email } = req.body;
 
   let query = `SELECT * FROM users WHERE email = '${email}'`;
-  const connection = Connect();
 
-  Query<IUser[]>(connection, query)
-    .then((users) => {
+  pool
+    .query(query)
+    .then((users: any) => {
       if (users.length == 0) {
         return res.status(400).json({
           message: "User not found",
@@ -218,7 +215,7 @@ const loginGmail = (req: Request, res: Response, next: NextFunction) => {
         }
       });
     })
-    .catch((error) => {
+    .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
 
       return res.status(500).json({
@@ -230,15 +227,16 @@ const loginGmail = (req: Request, res: Response, next: NextFunction) => {
 
 const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
   let query = `SELECT user_id, username FROM users`;
-  const connection = Connect();
-  Query<IUser[]>(connection, query)
-    .then((users) => {
+
+  pool
+    .query(query)
+    .then((users: any) => {
       return res.status(200).json({
         users,
         count: users.length,
       });
     })
-    .catch((error) => {
+    .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
 
       return res.status(500).json({
@@ -251,12 +249,13 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
 const getProfile = (req: Request, res: Response, next: NextFunction) => {
   let user_id = res.locals.jwt.user_id;
   let query = `SELECT * FROM users WHERE user_id = ${user_id}`;
-  const connection = Connect();
-  Query<IUser[]>(connection, query)
-    .then((users) => {
+
+  pool
+    .query(query)
+    .then((users: any) => {
       return res.status(200).json(users[0]);
     })
-    .catch((error) => {
+    .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
 
       return res.status(500).json({
@@ -283,14 +282,15 @@ const updateProfile = (req: Request, res: Response, next: NextFunction) => {
       true
     )
   );
-  const connection = Connect();
-  Query<IMySQLResult>(connection, query)
-    .then((result) => {
+
+  pool
+    .query(query)
+    .then((result: any) => {
       return res.status(201).json({
         message: "Nama toko updated",
       });
     })
-    .catch((error) => {
+    .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
 
       return res.status(500).json({
@@ -304,9 +304,8 @@ export const updateProfilePassword = async (req: Request, res: Response) => {
   let { current_password, new_password } = req.body;
   try {
     const user_id = res.locals.jwt.user_id;
-    const connection = Connect();
     const query = `SELECT password FROM users WHERE user_id = ${user_id}`;
-    const data = await Query<IUser[]>(connection, query);
+    const data = await pool.query(query);
     const result = await bcryptjs.compare(current_password, data[0]?.password);
     let statusCode = 200;
     let message = "Succesfully change password";
@@ -326,7 +325,7 @@ export const updateProfilePassword = async (req: Request, res: Response) => {
           true
         )
       );
-      await Query<IUser[]>(connection, updatePasswordQuery);
+      await pool.query(updatePasswordQuery);
     }
     res.status(statusCode).send({
       message,
