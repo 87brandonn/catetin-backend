@@ -304,7 +304,7 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
 
 const getProfile = (req: Request, res: Response, next: NextFunction) => {
   let user_id = res.locals.jwt.user_id;
-  let query = `SELECT username, email, nama_toko, created_at, updated_at FROM users WHERE user_id = ${user_id}`;
+  let query = `SELECT * FROM users WHERE user_id = ${user_id}`;
 
   Connect()
     .then((connection) => {
