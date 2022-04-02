@@ -23,7 +23,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
   let queryGet = `SELECT * FROM users WHERE username = '${username}'`;
 
   try {
-    const connection = await Connect();
+    const connection = Connect();
     const users = await Query<IUser[]>(connection, queryGet);
     if (users.length != 0) {
       res.status(400).json({
@@ -47,35 +47,25 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     }
 
     let query = `INSERT INTO users (username, password) VALUES ("${username}", "${hash}")`;
+    const connection = Connect();
 
-    Connect()
-      .then((connection) => {
-        Query<IMySQLResult>(connection, query)
-          .then((result) => {
-            signJWT(result.insertId, (_error, token) => {
-              if (_error) {
-                return res.status(401).json({
-                  message: "Unable to Sign JWT",
-                  error: _error,
-                });
-              } else if (token) {
-                console.log("have token");
-                res.status(200).json({
-                  message: "Auth Successful",
-                  token,
-                  user_id: result.insertId,
-                });
-              }
+    Query<IMySQLResult>(connection, query)
+      .then((result) => {
+        signJWT(result.insertId, (_error, token) => {
+          if (_error) {
+            return res.status(401).json({
+              message: "Unable to Sign JWT",
+              error: _error,
             });
-          })
-          .catch((error) => {
-            logging.error(NAMESPACE, error.message, error);
-
-            return res.status(500).json({
-              message: error.message,
-              error,
+          } else if (token) {
+            console.log("have token");
+            res.status(200).json({
+              message: "Auth Successful",
+              token,
+              user_id: result.insertId,
             });
-          });
+          }
+        });
       })
       .catch((error) => {
         logging.error(NAMESPACE, error.message, error);
@@ -97,9 +87,9 @@ const registerGmail = async (
 
   let query = `INSERT INTO users (email) VALUES ("${email}")`;
   let queryGet = `SELECT * FROM users WHERE email = '${email}'`;
+  const connection = Connect();
 
   try {
-    const connection = await Connect();
     const users = await Query<IUser[]>(connection, queryGet);
     if (users.length != 0) {
       signJWT(users[0].user_id, (_error, token) => {
@@ -125,34 +115,23 @@ const registerGmail = async (
       error,
     });
   }
-  Connect()
-    .then((connection) => {
-      Query<IMySQLResult>(connection, query)
-        .then((result) => {
-          logging.info(NAMESPACE, `User with id ${result.insertId} inserted.`);
-          signJWT(result.insertId, (_error, token) => {
-            if (_error) {
-              return res.status(401).json({
-                message: "Unable to Sign JWT",
-                error: _error,
-              });
-            } else if (token) {
-              return res.status(200).json({
-                message: "Auth Successful",
-                token,
-                user_id: result.insertId,
-              });
-            }
+  Query<IMySQLResult>(connection, query)
+    .then((result) => {
+      logging.info(NAMESPACE, `User with id ${result.insertId} inserted.`);
+      signJWT(result.insertId, (_error, token) => {
+        if (_error) {
+          return res.status(401).json({
+            message: "Unable to Sign JWT",
+            error: _error,
           });
-        })
-        .catch((error) => {
-          logging.error(NAMESPACE, error.message, error);
-
-          return res.status(500).json({
-            message: error.message,
-            error,
+        } else if (token) {
+          return res.status(200).json({
+            message: "Auth Successful",
+            token,
+            user_id: result.insertId,
           });
-        });
+        }
+      });
     })
     .catch((error) => {
       logging.error(NAMESPACE, error.message, error);
@@ -167,50 +146,38 @@ const registerGmail = async (
 const login = (req: Request, res: Response, next: NextFunction) => {
   let { username, password } = req.body;
 
-  console.log(username, password);
-
   let query = `SELECT * FROM users WHERE username = '${username}'`;
+  const connection = Connect();
 
-  Connect()
-    .then((connection) => {
-      Query<IUser[]>(connection, query)
-        .then((users) => {
-          if (users.length == 0) {
-            return res.status(400).json({
-              message: "User not found",
-            });
-          }
-          bcryptjs.compare(password, users[0].password, (error, result) => {
-            if (error || !result) {
+  Query<IUser[]>(connection, query)
+    .then((users) => {
+      if (users.length == 0) {
+        return res.status(400).json({
+          message: "User not found",
+        });
+      }
+      bcryptjs.compare(password, users[0].password, (error, result) => {
+        if (error || !result) {
+          return res.status(401).json({
+            message: "Password Mismatch",
+          });
+        } else if (result) {
+          signJWT(users[0].user_id, (_error, token) => {
+            if (_error) {
               return res.status(401).json({
-                message: "Password Mismatch",
+                message: "Unable to Sign JWT",
+                error: _error,
               });
-            } else if (result) {
-              signJWT(users[0].user_id, (_error, token) => {
-                if (_error) {
-                  return res.status(401).json({
-                    message: "Unable to Sign JWT",
-                    error: _error,
-                  });
-                } else if (token) {
-                  return res.status(200).json({
-                    message: "Auth Successful",
-                    token,
-                    user: users[0],
-                  });
-                }
+            } else if (token) {
+              return res.status(200).json({
+                message: "Auth Successful",
+                token,
+                user: users[0],
               });
             }
           });
-        })
-        .catch((error) => {
-          logging.error(NAMESPACE, error.message, error);
-
-          return res.status(500).json({
-            message: error.message,
-            error,
-          });
-        });
+        }
+      });
     })
     .catch((error) => {
       logging.error(NAMESPACE, error.message, error);
@@ -226,40 +193,30 @@ const loginGmail = (req: Request, res: Response, next: NextFunction) => {
   let { email } = req.body;
 
   let query = `SELECT * FROM users WHERE email = '${email}'`;
+  const connection = Connect();
 
-  Connect()
-    .then((connection) => {
-      Query<IUser[]>(connection, query)
-        .then((users) => {
-          if (users.length == 0) {
-            return res.status(400).json({
-              message: "User not found",
-            });
-          }
-          signJWT(users[0].user_id, (_error, token) => {
-            if (_error) {
-              return res.status(401).json({
-                message: "Unable to Sign JWT",
-
-                error: _error,
-              });
-            } else if (token) {
-              return res.status(200).json({
-                message: "Auth Successful",
-                token,
-                user: users[0],
-              });
-            }
-          });
-        })
-        .catch((error) => {
-          logging.error(NAMESPACE, error.message, error);
-
-          return res.status(500).json({
-            message: error.message,
-            error,
-          });
+  Query<IUser[]>(connection, query)
+    .then((users) => {
+      if (users.length == 0) {
+        return res.status(400).json({
+          message: "User not found",
         });
+      }
+      signJWT(users[0].user_id, (_error, token) => {
+        if (_error) {
+          return res.status(401).json({
+            message: "Unable to Sign JWT",
+
+            error: _error,
+          });
+        } else if (token) {
+          return res.status(200).json({
+            message: "Auth Successful",
+            token,
+            user: users[0],
+          });
+        }
+      });
     })
     .catch((error) => {
       logging.error(NAMESPACE, error.message, error);
@@ -273,24 +230,13 @@ const loginGmail = (req: Request, res: Response, next: NextFunction) => {
 
 const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
   let query = `SELECT user_id, username FROM users`;
-
-  Connect()
-    .then((connection) => {
-      Query<IUser[]>(connection, query)
-        .then((users) => {
-          return res.status(200).json({
-            users,
-            count: users.length,
-          });
-        })
-        .catch((error) => {
-          logging.error(NAMESPACE, error.message, error);
-
-          return res.status(500).json({
-            message: error.message,
-            error,
-          });
-        });
+  const connection = Connect();
+  Query<IUser[]>(connection, query)
+    .then((users) => {
+      return res.status(200).json({
+        users,
+        count: users.length,
+      });
     })
     .catch((error) => {
       logging.error(NAMESPACE, error.message, error);
@@ -305,21 +251,10 @@ const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
 const getProfile = (req: Request, res: Response, next: NextFunction) => {
   let user_id = res.locals.jwt.user_id;
   let query = `SELECT * FROM users WHERE user_id = ${user_id}`;
-
-  Connect()
-    .then((connection) => {
-      Query<IUser[]>(connection, query)
-        .then((users) => {
-          return res.status(200).json(users[0]);
-        })
-        .catch((error) => {
-          logging.error(NAMESPACE, error.message, error);
-
-          return res.status(500).json({
-            message: error.message,
-            error,
-          });
-        });
+  const connection = Connect();
+  Query<IUser[]>(connection, query)
+    .then((users) => {
+      return res.status(200).json(users[0]);
     })
     .catch((error) => {
       logging.error(NAMESPACE, error.message, error);
@@ -348,23 +283,12 @@ const updateProfile = (req: Request, res: Response, next: NextFunction) => {
       true
     )
   );
-
-  Connect()
-    .then((connection) => {
-      Query<IMySQLResult>(connection, query)
-        .then((result) => {
-          return res.status(201).json({
-            message: "Nama toko updated",
-          });
-        })
-        .catch((error) => {
-          logging.error(NAMESPACE, error.message, error);
-
-          return res.status(500).json({
-            message: error.message,
-            error,
-          });
-        });
+  const connection = Connect();
+  Query<IMySQLResult>(connection, query)
+    .then((result) => {
+      return res.status(201).json({
+        message: "Nama toko updated",
+      });
     })
     .catch((error) => {
       logging.error(NAMESPACE, error.message, error);
@@ -380,7 +304,7 @@ export const updateProfilePassword = async (req: Request, res: Response) => {
   let { current_password, new_password } = req.body;
   try {
     const user_id = res.locals.jwt.user_id;
-    const connection = await Connect();
+    const connection = Connect();
     const query = `SELECT password FROM users WHERE user_id = ${user_id}`;
     const data = await Query<IUser[]>(connection, query);
     const result = await bcryptjs.compare(current_password, data[0]?.password);
