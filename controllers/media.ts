@@ -24,7 +24,9 @@ const postImage = async (req: Request, res: Response) => {
     // Create a new blob in the bucket and upload the file data.
     const blob = bucket.file(req.file.originalname);
     const blobStream = blob.createWriteStream({
-      resumable: false,
+      metadata: {
+        contentType: req.file.mimetype,
+      },
     });
 
     blobStream.on("error", (err) => {
