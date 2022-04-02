@@ -10,6 +10,7 @@ router.get("/users", controller.getAllUsers);
 router.post("/register/gmail", controller.registerGmail);
 router.post("/login/gmail", controller.loginGmail);
 router.get("/profile", extractJWT, controller.getProfile);
-router.post("/profile", extractJWT, controller.updateProfile);
+router.put("/profile/password", extractJWT, controller.updateProfilePassword);
+router.put("/profile", extractJWT, controller.updateProfile);
 
 export default router;
