@@ -8,17 +8,19 @@ const params = {
   database: config.mysql.database,
 };
 
-const Connect = () => mysql.createPool({ ...params, connectionLimit: 1999 });
+const Connect = () => mysql.createPool({ ...params, connectionLimit: 99 });
 
 const Query = async <T>(connection: mysql.Pool, query: string) =>
   new Promise<T>((resolve, reject) => {
-    connection.query(query, connection, (error, result) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve(result);
+    connection.getConnection(function (err, poolConection) {
+      if (err) reject(err);
+      poolConection.query(query, function (error, results) {
+        poolConection.release();
+        if (error) {
+          reject(error);
+        }
+        resolve(results);
+      });
     });
   });
 
