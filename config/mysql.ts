@@ -8,7 +8,7 @@ const params = {
   database: config.mysql.database,
 };
 
-const Connect = () => mysql.createPool({ ...params, connectionLimit: 99 });
+const Connect = () => mysql.createPool({ ...params, connectionLimit: 1999 });
 
 const Query = async <T>(connection: mysql.Pool, query: string) =>
   new Promise<T>((resolve, reject) => {
