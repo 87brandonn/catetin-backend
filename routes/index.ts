@@ -1,21 +1,14 @@
 import express from "express";
-import router from "./auth";
 import authRouter from "./auth";
-import controller from "../controllers/user";
-import controllerBarang from "../controllers/barang";
-import controllerTransaksi from "../controllers/transaksi"
-import extractJWT from "../middleware/extractJWT";
+import barangRouter from "./barang";
+import mediaRouter from "./media";
+import transaksiRouter from "./transaksi";
 
 const routes = express.Router();
 
 routes.use("/auth", authRouter);
-routes.get("/get/profile", extractJWT, controller.getProfile)
-routes.post("/update/profile", extractJWT, controller.updateProfile)
-routes.post("/insert/barang", extractJWT, controllerBarang.insertBarang)
-routes.post("/update/barang", extractJWT, controllerBarang.updateBarang)
-routes.get("/get/barang", extractJWT, controllerBarang.getListBarang)
-routes.post("/insert/transaksi", extractJWT, controllerTransaksi.insertTransaksi)
-routes.get("/get/transaksi", extractJWT, controllerTransaksi.getTransaksi)
-routes.post("/update/transaksi", extractJWT, controllerTransaksi.updateTransaksi)
+routes.use("/barang", barangRouter);
+routes.use("/transaksi", transaksiRouter);
+routes.use("/media", mediaRouter);
 
 export default routes;
