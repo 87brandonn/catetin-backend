@@ -5,7 +5,7 @@ import moment from "moment";
 import { Request, Response } from "express";
 
 const dirname = path.resolve();
-const filePath = path.join(dirname, "/config/catetin-343018-1e15d7869cc3.json");
+const filePath = path.join(dirname, "/config/catetin-343018-9b5788896c47.json");
 const storage = new Storage({
   keyFilename: filePath,
 });

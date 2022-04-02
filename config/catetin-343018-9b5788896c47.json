@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "catetin-343018",
+  "private_key_id": "9b5788896c4764ae738a1a6b32f958a60db21f87",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDV4ZPY24am0z96\nI6gkrNNIJKeUqvMi1MyZRqmO+Adtf3XAJ/J6duto99CwCLYnK/MRLCKnB5b7DROQ\n3JAe4ikY3oXkdZ/ZMmeRdG3VHqjXG3ZNdcxwAd3K/N2bgHb3lUCRwaIi0f3YlS6a\nxvliXG99lTgbD3z4YKox3MX5RlCN+wK9Y1V1Aguo+0wtvVSkpqxB3VkF2sCD1mmS\nA5+ihMPHkfhF5+y66lo3DaLk0/uZkI1Wilt0dAvcocZA4ec3KoKrW59yGQc8wE64\nsVgv9Jv/Q7CLlfAYwvocVflJxrWXrU0YWSSq56wrXylusdH2ssEnldq7KLOL/y2k\nRuSUGdd/AgMBAAECggEACQAzPp8ObZraQwOZIeH8Cj8wpjsDfGXELncgz5l0hpEk\nnW+Q7sJuab50E9RqBf/9fK2Ez86r9ei4+BGwJvyRijBjJhglH/jVDvP9Y0ilBlhr\nhBr+/X+2m8JEeTTQzN6FFx00+44mxqSQj4bsG82UC47qC4l9Ut6OiwaldjYVUcQ4\nyTkV/5zgT3fJnT+Cb6tK6ly5GDqHFjTh2uClqjv8PIDIaN6aBR66r0fpgDwDVNPX\nbJZEPMUQaBllYme/00M+tb2bdRVkRwdZsyFITw4GTD2M9Zy0T7PS/GTtK3gp4Ush\nZnP8xmUnHeFtwevIrO/WnhQodr0YhOtvxDikfhy/sQKBgQDsKnDyBor7bMdN4lCC\nyxnyBblbWb2t4f7fs/wbCW5WxfUKapl5SZrKn6aR1l/qsRCdk5SMQehXFipD+KVU\nlWLHBhymCFVpybNE1eNDmsX7O9QtL5e9m7nciZu4Rd6xR0uJH9HBE5QvSVudcyIV\nNUN9eIGWxqDyHSNvLCwpGywaRQKBgQDn2AR3yYi03hLZQXtUPx71fJeCsGsbGoMQ\n2eYNVYvksy11l9MaLL1LFrKM3ay6Iq6x5zBlSRK+gZyvaVx7VTJLPaDhxcN9G9V2\n0CZP9PE9mypXz63SSckw3BBupXn93e7J8zO8el9qCYFCh2Rta29ORe8WND8Ni3OJ\nCT0CgMvI8wKBgQDb4LPhklfpuKBjEhd1ftU8MTofJBFmiCf9bRyGq6QwZAQ923vi\nobXdewDhfR82af6XR2UhpOdF1ZwqRqDffGpH9JfNuaqUYLdoml8KfVphC5YDL/Fu\nFkPYYcI6scqhcUiRda+bvLfVws3qbNxJtJqOghjdITeN07U+93hyGRtZpQKBgHxw\nTbWdzmqF58gEhZWqa4uH3CqhVlut1ztsOTZe/D88jOHZI82gxdlPzXYeZV9izjFe\nzXMPzafDGb5s5t6r09resUN9SngUQHcNMgMojXNrnUaUic+dGwfGlmtNFjVUsZ5j\nkxlO9XeMsnxq/1Rbndp9Xt6kHFPAzbp34u89AiRRAoGATIg5UP76hto2/K80/N3M\njDdk7XCabzS+VCcF+SJa7QcOPpuucF4bA47prHLtRYQFUwiFE5uXHY3l7Op9DMR4\nO0lmvgUerjBuJUc11Mcj0cykgr/JCagZ5+UXmkD9907gFWnx36iHLsxAebCFNfa5\nFzlumwrBOyDSocBN0uJOvo4=\n-----END PRIVATE KEY-----\n",
+  "client_email": "catetin-sa2@catetin-343018.iam.gserviceaccount.com",
+  "client_id": "112315557587140482609",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/catetin-sa2%40catetin-343018.iam.gserviceaccount.com"
+}
