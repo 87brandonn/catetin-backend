@@ -39,3 +39,17 @@ export function groupDataByDate(data: ITransaksiWithDetail[]) {
     return groups;
   }, {});
 }
+
+export const getOrderQuery = (sort: string) => {
+  return `${(sort as string)
+    ?.split(",")
+    ?.map((key) => {
+      if (key.includes("-")) {
+        key = key.replace("-", "");
+        return `${key} DESC`;
+      } else {
+        return `${key} ASC`;
+      }
+    })
+    ?.join(", ")}`;
+};

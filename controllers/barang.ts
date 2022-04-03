@@ -1,3 +1,4 @@
+import { getOrderQuery } from "./../utils/index";
 import { NextFunction, Request, Response } from "express";
 import logging from "../config/logging";
 import pool from "../config/mysql";
@@ -46,22 +47,17 @@ const updateBarang = (req: Request, res: Response, next: NextFunction) => {
 };
 const getListBarang = (req: Request, res: Response, next: NextFunction) => {
   let user_id = res.locals.jwt.user_id;
-  var query = `SELECT * FROM barang WHERE user_id = ${user_id}`;
-  let sort_stock = req.query.sort_stock;
-  let sort_harga = req.query.sort_harga;
-  let filter_nama_barang = req.query.nama_barang;
+  let query = `SELECT * FROM barang WHERE user_id = ${user_id}`;
+  const { sort, nama_barang } = req.query;
+  const orderQuery = getOrderQuery(sort as string);
 
-  if (filter_nama_barang != undefined) {
-    query = query.concat(` AND nama_barang LIKE '%${filter_nama_barang}%'`);
+  if (nama_barang) {
+    query += ` AND nama_barang LIKE '%${nama_barang}%'`;
+  }
+  if (orderQuery) {
+    query += ` ORDER BY ${orderQuery}`;
   }
 
-  if (sort_harga != undefined) {
-    query = query.concat(` ORDER BY harga ${sort_harga}`);
-  }
-
-  if (sort_stock != undefined && sort_harga == undefined) {
-    query = query.concat(` ORDER BY harga ${sort_stock}`);
-  }
   pool
     .query(query)
     .then((barang: IBarang[]) => {
