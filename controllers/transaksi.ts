@@ -1,73 +1,63 @@
 import { NextFunction, Request, Response } from "express";
 import pool from "../config/mysql";
-import IBarang, { IBarangPayload } from "../interfaces/barang";
+import { IBarangPayload } from "../interfaces/barang";
 import ITransaksi, {
   ITransaksiDetail,
   ITransaksiWithDetail,
 } from "../interfaces/transaksi";
+import { generateEditQuery, serializePayloadtoQuery } from "../utils";
 
-const insertTransaksi = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+const insertTransaksi = async (req: Request, res: Response) => {
   let { title, tipe_transaksi, tanggal, total, barang, notes } = req.body;
-
   let user_id = res.locals.jwt.user_id;
   let query = `INSERT INTO transaksi (user_id, nominal_transaksi, tanggal, title, tipe_transaksi, notes) VALUES (${user_id} ,${total}, "${tanggal}", "${title}", ${tipe_transaksi}, "${notes}")`;
-  var transaksi_id = 1;
+
   try {
-    var responseInsert = await pool.query(query);
-    transaksi_id = responseInsert.insertId;
+    const responseInsert = await pool.query(query);
+    const transaksi_id = responseInsert.insertId;
+    const promises = [];
+
+    if (tipe_transaksi == 3 || tipe_transaksi == 4) {
+      promises.push(
+        Promise.all(
+          barang.map(async (element: IBarangPayload) => {
+            var queryDetail = `INSERT INTO transaksi_detail (transaksi_id, barang_id, amount) VALUES (${transaksi_id}, ${element.barang_id}, ${element.amount})`;
+            return pool.query(queryDetail);
+          })
+        )
+      );
+      if (tipe_transaksi == 3) {
+        promises.push(
+          Promise.all(
+            barang.map(async (element: IBarangPayload) => {
+              var queryUpdate = `UPDATE barang SET stok = stok - ${element.amount} WHERE barang_id = ${element.barang_id}`;
+              return pool.query(queryUpdate);
+            })
+          )
+        );
+      }
+      if (tipe_transaksi == 4) {
+        promises.push(
+          Promise.all(
+            barang.map(async (element: IBarangPayload) => {
+              var queryUpdate = `UPDATE barang SET stok = stok + ${element.amount} WHERE barang_id = ${element.barang_id}`;
+              return pool.query(queryUpdate);
+            })
+          )
+        );
+      }
+      const data = await Promise.all(promises);
+      return res.status(200).json({
+        data,
+        message: "Succesfully insert transaction",
+      });
+    }
   } catch (error: any) {
     return res.status(500).json({
       message: error.message,
       error,
     });
   }
-
-  if (tipe_transaksi == 3 || tipe_transaksi == 4) {
-    barang.forEach(async (element: IBarangPayload) => {
-      try {
-        var queryDetail = `INSERT INTO transaksi_detail (transaksi_id, barang_id, amount) VALUES (${transaksi_id}, ${element.barang_id}, ${element.amount})`;
-        await pool.query(queryDetail);
-      } catch (error: any) {
-        return res.status(500).json({
-          message: error.message,
-          error,
-        });
-      }
-    });
-    if (tipe_transaksi == 3) {
-      barang.forEach(async (element: IBarangPayload) => {
-        try {
-          var queryUpdate = `UPDATE barang SET stok = stok + ${element.amount} WHERE barang_id = ${element.barang_id}`;
-          await pool.query(queryUpdate);
-        } catch (error: any) {
-          return res.status(500).json({
-            message: error.message,
-            error,
-          });
-        }
-      });
-    }
-    if (tipe_transaksi == 4) {
-      barang.forEach(async (element: IBarangPayload) => {
-        try {
-          var queryUpdate = `UPDATE barang SET stok = stok - ${element.amount} WHERE barang_id = ${element.barang_id}`;
-          await pool.query(queryUpdate);
-        } catch (error: any) {
-          return res.status(500).json({
-            message: error.message,
-            error,
-          });
-        }
-      });
-    }
-  }
-  return res.status(200).json({
-    message: "success",
-  });
 };
 
 const getTransaksi = async (
@@ -107,65 +97,88 @@ const getTransaksi = async (
   return res.status(200).json(transaksiDataWithDetail);
 };
 
-const updateTransaksi = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+const updateTransaksi = async (req: Request, res: Response) => {
   let { title, tipe_transaksi, tanggal, total, barang, notes, transaksi_id } =
     req.body;
-  let query = `UPDATE transaksi SET title = "${title}", tipe_transaksi = ${tipe_transaksi}, tanggal = "${tanggal}", nominal_transaksi = ${total}, notes = "${notes}" WHERE transaksi_id = ${transaksi_id}`;
+  const promises = [];
+  const query = generateEditQuery(
+    "transaksi",
+    serializePayloadtoQuery({
+      title,
+      tipe_transaksi,
+      tanggal,
+      nominal_transaksi: total,
+      notes,
+    }),
+    serializePayloadtoQuery(
+      {
+        transaksi_id,
+      },
+      true
+    )
+  );
+
   try {
-    await pool.query(query);
+    promises.push(pool.query(query));
+    if (tipe_transaksi === 3 || tipe_transaksi === 4) {
+      promises.push(
+        Promise.all(
+          barang.map(async (element: IBarangPayload) => {
+            const queryDetail = generateEditQuery(
+              "transaksi_detail",
+              serializePayloadtoQuery({
+                amount: element.amount,
+              }),
+              serializePayloadtoQuery(
+                {
+                  barang_id: element.barang_id,
+                  transaksi_id,
+                },
+                true
+              )
+            );
+            return pool.query(queryDetail);
+          })
+        )
+      );
+      if (tipe_transaksi === 3) {
+        promises.push(
+          Promise.all(
+            barang.map(async (element: IBarangPayload) => {
+              const data: ITransaksiDetail[] = await pool.query(
+                `SELECT amount FROM transaksi_detail WHERE barang_id = ${element.barang_id} AND transaksi_id = ${transaksi_id}`
+              );
+              const queryUpdate = `UPDATE barang SET stok = stok + ${element.amount} - ${data[0].amount} WHERE barang_id = ${element.barang_id}`;
+              return pool.query(queryUpdate);
+            })
+          )
+        );
+      }
+      if (tipe_transaksi === 4) {
+        promises.push(
+          Promise.all(
+            barang.map(async (element: IBarangPayload) => {
+              const data: ITransaksiDetail[] = await pool.query(
+                `SELECT amount FROM transaksi_detail WHERE barang_id = ${element.barang_id} AND transaksi_id = ${transaksi_id}`
+              );
+              var queryUpdate = `UPDATE barang SET stok = stok - ${element.amount} + ${data[0].amount} WHERE barang_id = ${element.barang_id}`;
+              return pool.query(queryUpdate);
+            })
+          )
+        );
+      }
+    }
+    const data = await Promise.all(promises);
+    return res.status(200).json({
+      data,
+      message: "success",
+    });
   } catch (error: any) {
     return res.status(500).json({
       message: error.message,
       error,
     });
   }
-
-  if (tipe_transaksi == 3 || tipe_transaksi == 4) {
-    barang.forEach(async (element: IBarangPayload) => {
-      try {
-        var queryDetail = `UPDATE transaksi_detail SET amount = ${element.new} WHERE barang_id = ${element.barang_id} AND transaksi_id = ${transaksi_id}`;
-        await pool.query(queryDetail);
-      } catch (error: any) {
-        return res.status(500).json({
-          message: error.message,
-          error,
-        });
-      }
-    });
-    if (tipe_transaksi == 3) {
-      barang.forEach(async (element: IBarangPayload) => {
-        try {
-          var queryUpdate = `UPDATE barang SET stok = stok + ${element.new} - ${element.old} WHERE barang_id = ${element.barang_id}`;
-          await pool.query(queryUpdate);
-        } catch (error: any) {
-          return res.status(500).json({
-            message: error.message,
-            error,
-          });
-        }
-      });
-    }
-    if (tipe_transaksi == 4) {
-      barang.forEach(async (element: IBarangPayload) => {
-        try {
-          var queryUpdate = `UPDATE barang SET stok = stok - ${element.new} + ${element.old} WHERE barang_id = ${element.barang_id}`;
-          await pool.query(queryUpdate);
-        } catch (error: any) {
-          return res.status(500).json({
-            message: error.message,
-            error,
-          });
-        }
-      });
-    }
-  }
-  return res.status(200).json({
-    message: "success",
-  });
 };
 
 export default { insertTransaksi, getTransaksi, updateTransaksi };

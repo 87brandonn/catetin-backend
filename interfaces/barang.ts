@@ -9,6 +9,4 @@ export default interface IBarang {
 
 export interface IBarangPayload extends IBarang {
   amount: number;
-  new: number;
-  old: number;
 }
