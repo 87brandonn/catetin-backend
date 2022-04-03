@@ -150,7 +150,9 @@ const updateTransaksi = async (req: Request, res: Response) => {
               );
               const value = element.amount - data[0].amount;
               const prefix = value > 0 ? "-" : "+";
-              const queryUpdate = `UPDATE barang SET stok = stok ${prefix} ${value} WHERE barang_id = ${element.barang_id}`;
+              const queryUpdate = `UPDATE barang SET stok = stok ${prefix} ${Math.abs(
+                value
+              )} WHERE barang_id = ${element.barang_id}`;
               return pool.query(queryUpdate);
             })
           )
@@ -165,7 +167,9 @@ const updateTransaksi = async (req: Request, res: Response) => {
               );
               const value = element.amount - data[0].amount;
               const prefix = value > 0 ? "+" : "-";
-              var queryUpdate = `UPDATE barang SET stok = stok ${prefix} ${value} WHERE barang_id = ${element.barang_id}`;
+              var queryUpdate = `UPDATE barang SET stok = stok ${prefix} ${Math.abs(
+                value
+              )} WHERE barang_id = ${element.barang_id}`;
               return pool.query(queryUpdate);
             })
           )
