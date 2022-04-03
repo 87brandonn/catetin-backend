@@ -29,7 +29,7 @@ const insertBarang = (req: Request, res: Response, next: NextFunction) => {
 const updateBarang = (req: Request, res: Response, next: NextFunction) => {
   let { barang_id, nama_barang, stok, harga, barang_picture } = req.body;
 
-  let query = `UPDATE barang SET nama_barang = "${nama_barang}", stok = ${stok}, harga = ${harga} WHERE barang_id = ${barang_id}, barang_picture = "${barang_picture}"`;
+  let query = `UPDATE barang SET nama_barang = "${nama_barang}", stok = ${stok}, harga = ${harga}, barang_picture = "${barang_picture}" WHERE barang_id = ${barang_id}`;
 
   pool
     .query(query)
