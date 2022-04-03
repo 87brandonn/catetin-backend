@@ -27,9 +27,9 @@ const insertBarang = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const updateBarang = (req: Request, res: Response, next: NextFunction) => {
-  let { barang_id, nama_barang, stok, harga } = req.body;
+  let { barang_id, nama_barang, stok, harga, barang_picture } = req.body;
 
-  let query = `UPDATE barang SET nama_barang = "${nama_barang}", stok = ${stok}, harga = ${harga} WHERE barang_id = ${barang_id}`;
+  let query = `UPDATE barang SET nama_barang = "${nama_barang}", stok = ${stok}, harga = ${harga} WHERE barang_id = ${barang_id}, barang_picture = "${barang_picture}"`;
 
   pool
     .query(query)
@@ -38,7 +38,6 @@ const updateBarang = (req: Request, res: Response, next: NextFunction) => {
     })
     .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
-
       return res.status(500).json({
         message: error.message,
         error,
