@@ -54,7 +54,7 @@ const getListBarang = (req: Request, res: Response, next: NextFunction) => {
   if (nama_barang) {
     query += ` AND nama_barang LIKE '%${nama_barang}%'`;
   }
-  if (orderQuery) {
+  if (orderQuery !== "undefined") {
     query += ` ORDER BY ${orderQuery}`;
   }
 
