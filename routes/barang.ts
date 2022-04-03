@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.post("/", extractJWT, controller.insertBarang);
 router.put("/", extractJWT, controller.updateBarang);
+router.get("/:id", extractJWT, controller.getBarangDetail);
 router.get("/", extractJWT, controller.getListBarang);
 
 export default router;

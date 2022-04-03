@@ -81,4 +81,33 @@ const getListBarang = (req: Request, res: Response, next: NextFunction) => {
     });
 };
 
-export default { insertBarang, updateBarang, getListBarang };
+const getBarangDetail = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { transaksi } = req.query;
+  try {
+    const queryBarang = `SELECT * FROM barang WHERE barang_id = ${id}`;
+    let barangData: IBarang[] = await pool.query(queryBarang);
+    if (transaksi) {
+      barangData = await Promise.all(
+        barangData.map(async (barang) => {
+          const queryTransaksi = `SELECT * FROM transaksi INNER JOIN transaksi_detail td ON td.transaksi_id = transaksi.transaksi_id WHERE td.barang_id = ${barang.barang_id}`;
+          return {
+            ...barang,
+            transaksi_data: await pool.query(queryTransaksi),
+          };
+        })
+      );
+    }
+    res.status(200).send({
+      data: barangData,
+      message: "Succesfully get barang detail",
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err.message,
+      err,
+    });
+  }
+};
+
+export default { insertBarang, updateBarang, getListBarang, getBarangDetail };
