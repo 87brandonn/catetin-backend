@@ -1,6 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import pool from "../config/mysql";
-import { IBarangPayload } from "../interfaces/barang";
+import IBarang, { IBarangPayload } from "../interfaces/barang";
+import ITransaksi, {
+  ITransaksiDetail,
+  ITransaksiWithDetail,
+} from "../interfaces/transaksi";
 
 const insertTransaksi = async (
   req: Request,
@@ -72,22 +76,35 @@ const getTransaksi = async (
   next: NextFunction
 ) => {
   let user_id = res.locals.jwt.user_id;
-  var query = `SELECT * from transaksi WHERE user_id = ${user_id}`;
+  let query = `SELECT * from transaksi WHERE user_id = ${user_id}`;
   let filter_tipe_transaksi = req.query.tipe_transaksi;
 
   if (filter_tipe_transaksi != undefined) {
     query = query.concat(` AND tipe_transaksi = ${filter_tipe_transaksi}`);
   }
 
+  let transaksiData: ITransaksi[] = [];
+  let transaksiDataWithDetail: ITransaksiWithDetail[] = [];
+
   try {
-    var result = await pool.query(query);
+    transaksiData = await pool.query(query);
+    transaksiDataWithDetail = await Promise.all(
+      transaksiData.map(async (transaksi) => {
+        const queryTransaksiDetail = `SELECT * FROM transaksi_detail td INNER JOIN barang b ON td.barang_id = b.barang_id WHERE td.transaksi_id = ${transaksi.transaksi_id} `;
+        const transaksiDetailResult = await pool.query(queryTransaksiDetail);
+        return {
+          ...transaksi,
+          transaksi_detail: transaksiDetailResult,
+        };
+      })
+    );
   } catch (error: any) {
     return res.status(500).json({
       message: error.message,
       error,
     });
   }
-  return res.status(200).json(result);
+  return res.status(200).json(transaksiDataWithDetail);
 };
 
 const updateTransaksi = async (
