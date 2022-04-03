@@ -5,7 +5,11 @@ import ITransaksi, {
   ITransaksiDetail,
   ITransaksiWithDetail,
 } from "../interfaces/transaksi";
-import { generateEditQuery, serializePayloadtoQuery } from "../utils";
+import {
+  generateEditQuery,
+  groupDataByDate,
+  serializePayloadtoQuery,
+} from "../utils";
 
 const insertTransaksi = async (req: Request, res: Response) => {
   let { title, tipe_transaksi, tanggal, total, barang, notes } = req.body;
@@ -242,9 +246,38 @@ const deleteTransaksi = async (req: Request, res: Response) => {
   }
 };
 
+const getTransaksiReport = async (req: Request, res: Response) => {
+  let user_id = res.locals.jwt.user_id;
+
+  try {
+    const queryTransaksi = `SELECT * FROM transaksi WHERE user_id = ${user_id}`;
+    const transaksiData: ITransaksi[] = await pool.query(queryTransaksi);
+    const transaksiDataWithDetail = await Promise.all(
+      transaksiData.map(async (transaksi) => {
+        const queryTransaksiDetail = `SELECT * FROM transaksi_detail td INNER JOIN barang b ON td.barang_id = b.barang_id WHERE td.transaksi_id = ${transaksi.transaksi_id} `;
+        const transaksiDetailResult = await pool.query(queryTransaksiDetail);
+        return {
+          ...transaksi,
+          transaksi_detail: transaksiDetailResult,
+        };
+      })
+    );
+    res.status(200).send({
+      data: groupDataByDate(transaksiDataWithDetail),
+      message: "Succesfully get transaction report",
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err.message,
+      err,
+    });
+  }
+};
+
 export default {
   insertTransaksi,
   getTransaksi,
   updateTransaksi,
   deleteTransaksi,
+  getTransaksiReport,
 };

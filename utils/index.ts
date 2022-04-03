@@ -1,3 +1,5 @@
+import { ITransaksiWithDetail } from "../interfaces/transaksi";
+
 export const serializePayloadtoQuery = (
   object: Record<string, any>,
   whereClause = false
@@ -26,3 +28,14 @@ export const generateEditQuery = (
 ) => {
   return `UPDATE ${tableName} SET ${setQuery} WHERE ${conditionalQuery}`;
 };
+
+export function groupDataByDate(data: ITransaksiWithDetail[]) {
+  return data.reduce((groups: any, game) => {
+    const date = game.tanggal.split("T")[0];
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(game);
+    return groups;
+  }, {});
+}

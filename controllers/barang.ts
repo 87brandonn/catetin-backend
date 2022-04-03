@@ -7,20 +7,18 @@ import IMySQLResult from "../interfaces/result";
 const NAMESPACE = "Barang";
 
 const insertBarang = (req: Request, res: Response, next: NextFunction) => {
-  let { nama_barang, stok, harga } = req.body;
+  let { nama_barang, harga, barang_picture } = req.body;
 
   let user_id = res.locals.jwt.user_id;
-  let query = `INSERT INTO barang (user_id, nama_barang, stok, harga) VALUES (${user_id} ,"${nama_barang}", ${stok}, ${harga})`;
+  let query = `INSERT INTO barang (user_id, nama_barang, stok, harga, barang_picture ) VALUES (${user_id} ,"${nama_barang}", 0 , ${harga}, "${barang_picture}")`;
   pool
     .query(query)
     .then((result: IMySQLResult) => {
       logging.info(NAMESPACE, `User with id ${result.insertId} inserted.`);
-
       return res.status(201).json(result);
     })
     .catch((error: any) => {
       logging.error(NAMESPACE, error.message, error);
-
       return res.status(500).json({
         message: error.message,
         error,
@@ -47,15 +45,13 @@ const updateBarang = (req: Request, res: Response, next: NextFunction) => {
       });
     });
 };
-// filter
 const getListBarang = (req: Request, res: Response, next: NextFunction) => {
   let user_id = res.locals.jwt.user_id;
   var query = `SELECT * FROM barang WHERE user_id = ${user_id}`;
   let sort_stock = req.query.sort_stock;
   let sort_harga = req.query.sort_harga;
   let filter_nama_barang = req.query.nama_barang;
-  console.log(sort_stock);
-  console.log(filter_nama_barang);
+
   if (filter_nama_barang != undefined) {
     query = query.concat(` AND nama_barang LIKE '%${filter_nama_barang}%'`);
   }
@@ -64,7 +60,6 @@ const getListBarang = (req: Request, res: Response, next: NextFunction) => {
     query = query.concat(` ORDER BY harga ${sort_harga}`);
   }
 
-  // filter
   if (sort_stock != undefined && sort_harga == undefined) {
     query = query.concat(` ORDER BY harga ${sort_stock}`);
   }

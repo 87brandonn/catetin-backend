@@ -5,6 +5,7 @@ export default interface IBarang {
   nama_barang: string;
   created_at: string;
   updated_at: string;
+  barang_picture: string;
 }
 
 export interface IBarangPayload extends IBarang {
