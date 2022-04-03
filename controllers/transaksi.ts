@@ -148,9 +148,9 @@ const updateTransaksi = async (req: Request, res: Response) => {
               const data: ITransaksiDetail[] = await pool.query(
                 `SELECT amount FROM transaksi_detail WHERE barang_id = ${element.barang_id} AND transaksi_id = ${transaksi_id}`
               );
-              const queryUpdate = `UPDATE barang SET stok = stok - ${
-                element.amount - data[0].amount
-              }  WHERE barang_id = ${element.barang_id}`;
+              const value = element.amount - data[0].amount;
+              const prefix = value > 0 ? "-" : "+";
+              const queryUpdate = `UPDATE barang SET stok = stok ${prefix} ${value} WHERE barang_id = ${element.barang_id}`;
               return pool.query(queryUpdate);
             })
           )
@@ -163,7 +163,9 @@ const updateTransaksi = async (req: Request, res: Response) => {
               const data: ITransaksiDetail[] = await pool.query(
                 `SELECT amount FROM transaksi_detail WHERE barang_id = ${element.barang_id} AND transaksi_id = ${transaksi_id}`
               );
-              var queryUpdate = `UPDATE barang SET stok = stok + ${element.amount - data[0].amount} WHERE barang_id = ${element.barang_id}`;
+              const value = element.amount - data[0].amount;
+              const prefix = value > 0 ? "+" : "-";
+              var queryUpdate = `UPDATE barang SET stok = stok ${prefix} ${value} WHERE barang_id = ${element.barang_id}`;
               return pool.query(queryUpdate);
             })
           )
