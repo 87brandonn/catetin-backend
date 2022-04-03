@@ -181,4 +181,62 @@ const updateTransaksi = async (req: Request, res: Response) => {
   }
 };
 
-export default { insertTransaksi, getTransaksi, updateTransaksi };
+const deleteTransaksi = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const promises = [];
+    const queryTransaksiDetail = `SELECT * FROM transaksi_detail WHERE transaksi_id = ${id} `;
+    const queryTransaksi = `SELECT * FROM transaksi WHERE transaksi_id = ${id}`;
+    const [dataTransaksi, dataTransaksiDetail]: [
+      ITransaksi[],
+      ITransaksiDetail[]
+    ] = await Promise.all([
+      pool.query(queryTransaksi),
+      pool.query(queryTransaksiDetail),
+    ]);
+
+    // Handle update barang stok
+    promises.push(
+      Promise.all(
+        dataTransaksiDetail.map((transaksiDetail) => {
+          let action = "";
+          if (dataTransaksi[0].tipe_transaksi === 3) {
+            action = "+";
+          } else if (dataTransaksi[0].tipe_transaksi === 4) {
+            action = "-";
+          }
+          const queryBarang = `UPDATE barang SET stok = stok ${action} ${transaksiDetail.amount} WHERE barang_id = ${transaksiDetail.barang_id}`;
+          return pool.query(queryBarang);
+        })
+      )
+    );
+
+    // Handle delete transaksi detail
+    promises.push(
+      pool.query(`DELETE FROM transaksi_detail WHERE transaksi_id = ${id} `)
+    );
+
+    // Handle delete transaksi
+    promises.push(
+      pool.query(`DELETE FROM transaksi WHERE transaksi_id = ${id}`)
+    );
+
+    const data = await Promise.all(promises);
+    res.status(200).send({
+      data,
+      message: "Succesfully delete transaksi",
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err.message,
+      err,
+    });
+  }
+};
+
+export default {
+  insertTransaksi,
+  getTransaksi,
+  updateTransaksi,
+  deleteTransaksi,
+};
