@@ -41,15 +41,12 @@ export function groupDataByDate(data: ITransaksiWithDetail[]) {
 }
 
 export const getOrderQuery = (sort: string) => {
-  return `${(sort as string)
-    ?.split(",")
-    ?.map((key) => {
-      if (key.includes("-")) {
-        key = key.replace("-", "");
-        return `${key} DESC`;
-      } else {
-        return `${key} ASC`;
-      }
-    })
-    ?.join(", ")}`;
+  return `${(sort as string)?.split(",")?.map((key) => {
+    if (key.includes("-")) {
+      key = key.replace("-", "");
+      return [`${key}, DESC`];
+    } else {
+      return [`${key}, ASC`];
+    }
+  })}`;
 };
