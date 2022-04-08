@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { Op } from "sequelize";
 import models from "../models";
 import { getOrderQuery } from "./../utils/index";
 
@@ -42,7 +43,6 @@ const updateBarang = async (
   try {
     const data = await Item.update(
       {
-        stock: 0,
         name: nama_barang,
         price: harga,
         picture: barang_picture,
@@ -72,23 +72,38 @@ const getListBarang = async (
   const { sort, nama_barang } = req.query;
   const order = getOrderQuery(sort as string);
 
+  const orderQuery = {};
+  const whereQuery = {};
+  if (sort) {
+    Object.assign(orderQuery, {
+      order,
+    });
+  }
+  if (nama_barang) {
+    Object.assign(whereQuery, {
+      name: {
+        [Op.like]: `%${nama_barang}%`,
+      },
+    });
+  }
+
   try {
     const data = await Item.findAll({
       where: {
         UserId: user_id,
-        nama_barang: {
-          like: `%${nama_barang}%`,
-        },
+        deleted: false,
+        ...whereQuery,
       },
-      order,
+      ...orderQuery,
     });
     res.status(200).send({
       data,
-      message: "Succesfully insert barang",
+      message: "Succesfully get barang",
     });
   } catch (err) {
+    console.log(err);
     res.status(500).send({
-      message: "Failed to insert barang",
+      message: "Failed to get barang",
     });
   }
 };
@@ -96,14 +111,20 @@ const getListBarang = async (
 const getBarangDetail = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { transaksi } = req.query;
+  const modelQuery = {};
+  if (transaksi) {
+    Object.assign(modelQuery, {
+      include: {
+        model: Transaction,
+      },
+    });
+  }
   try {
     const data = await Item.findAll({
       where: {
         id,
       },
-      include: {
-        model: Transaction,
-      },
+      ...modelQuery,
     });
     res.status(200).send({
       data,

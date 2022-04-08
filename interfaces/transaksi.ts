@@ -1,22 +1,22 @@
 import IBarang from "./barang";
 
 export default interface ITransaksi {
-  transaksi_id: number;
-  user_id: number;
-  tipe_transaksi: number;
-  nominal_transaksi: number;
-  created_at: string;
-  updated_at: string;
-  tanggal: string;
+  id: number;
+  UserId: number;
+  type: number;
+  nominal: number;
+  createdAt: string;
+  updatedAt: string;
+  transaction_date: string;
   title: string;
   notes: string;
 }
 
 export interface ITransaksiDetail {
-  detail_id: number;
-  barang_id: number;
+  id: number;
+  ItemId: number;
   amount: number;
-  transaksi_id: number;
+  TransactionId: number;
 }
 
 export interface ITransaksiWithDetail extends ITransaksi {

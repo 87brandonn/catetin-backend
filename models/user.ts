@@ -15,9 +15,9 @@ export default (sequelize: Sequelize, DataTypes: any) => {
   }
   User.init(
     {
-      username: DataTypes.STRING,
-      password: DataTypes.STRING,
-      email: DataTypes.STRING,
+      username: { type: DataTypes.STRING, allowNull: false, unique: true },
+      password: { type: DataTypes.STRING, allowNull: false },
+      email: { type: DataTypes.STRING, allowNull: false, unique: true },
       provider: {
         type: DataTypes.STRING,
         validate: {

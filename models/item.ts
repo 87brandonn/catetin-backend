@@ -17,10 +17,11 @@ export default (sequelize: Sequelize, DataTypes: any) => {
   }
   Item.init(
     {
-      stock: DataTypes.INTEGER,
-      name: DataTypes.STRING,
-      price: DataTypes.INTEGER,
+      stock: { type: DataTypes.INTEGER, defaultValue: 0 },
+      name: { type: DataTypes.STRING, allowNull: false },
+      price: { type: DataTypes.INTEGER, allowNull: false },
       picture: DataTypes.STRING,
+      deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
     },
     {
       sequelize,

@@ -3,6 +3,8 @@ import controller from "../controllers/transaksi";
 import extractJWT from "../middleware/extractJWT";
 const router = express.Router();
 
+router.put("/detail", extractJWT, controller.updateTransaksiDetail);
+router.post("/detail", extractJWT, controller.insertTransaksiDetail);
 router.post("/", extractJWT, controller.insertTransaksi);
 router.get("/report", extractJWT, controller.getTransaksiReport);
 router.get("/", extractJWT, controller.getTransaksi);

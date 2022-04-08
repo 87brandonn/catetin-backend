@@ -31,7 +31,7 @@ export const generateEditQuery = (
 
 export function groupDataByDate(data: ITransaksiWithDetail[]) {
   return data.reduce((groups: any, game) => {
-    const date = game.tanggal.split("T")[0];
+    const date = game.transaction_date.split("T")[0];
     if (!groups[date]) {
       groups[date] = [];
     }
@@ -41,12 +41,14 @@ export function groupDataByDate(data: ITransaksiWithDetail[]) {
 }
 
 export const getOrderQuery = (sort: string) => {
-  return `${(sort as string)?.split(",")?.map((key) => {
+  const arrayOrder: string[][] = [];
+  `${(sort as string)?.split(",")?.forEach((key) => {
     if (key.includes("-")) {
       key = key.replace("-", "");
-      return [`${key}, DESC`];
+      arrayOrder.push([`${key}`, `DESC`]);
     } else {
-      return [`${key}, ASC`];
+      arrayOrder.push([`${key}`, `ASC`]);
     }
   })}`;
+  return arrayOrder;
 };

@@ -1,13 +1,13 @@
 import bcryptjs from "bcryptjs";
 import { NextFunction, Request, Response } from "express";
+import crypto from "crypto";
+import { Op } from "sequelize";
 import logging from "../config/logging";
-import pool from "../config/mysql";
 import signJWT from "../function/signJWT";
-import IMySQLResult from "../interfaces/result";
-import IUser from "../interfaces/user";
-import { generateEditQuery, serializePayloadtoQuery } from "./../utils/index";
+import model from "../models";
 
 const NAMESPACE = "User";
+const { User, Profile } = model;
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
   logging.info(NAMESPACE, "Token validated, user authorized.");
@@ -18,318 +18,232 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
-  let { username, password } = req.body;
-
-  let queryGet = `SELECT * FROM users WHERE username = '${username}'`;
+  let { username, password, email } = req.body;
 
   try {
-    const users = await pool.query(queryGet);
-    if (users.length != 0) {
+    const users = await User.findOne({
+      where: {
+        username,
+      },
+    });
+    if (users) {
       res.status(400).json({
         message: "Username is used",
       });
       return;
     }
+
+    const hash = await bcryptjs.hash(password, 10);
+    const { id } = await User.create({
+      username,
+      password: hash,
+      provider: "catetin",
+      email,
+    });
+
+    signJWT(id, (_error, token) => {
+      if (_error) {
+        return res.status(401).json({
+          message: "Unable to Sign JWT",
+          error: _error,
+        });
+      } else if (token) {
+        res.status(200).json({
+          message: "Auth Successful",
+          token,
+          user_id: id,
+        });
+      }
+    });
   } catch (error: any) {
     return res.status(500).json({
       message: error.message,
       error,
     });
   }
+};
 
-  bcryptjs.hash(password, 10, (hashError, hash) => {
-    if (hashError) {
-      return res.status(401).json({
-        message: hashError.message,
-        error: hashError,
+const login = async (req: Request, res: Response, next: NextFunction) => {
+  let { username, password } = req.body;
+
+  try {
+    const users = await User.findOne({
+      where: {
+        provider: "catetin",
+        [Op.or]: [
+          {
+            username,
+          },
+          {
+            email: username,
+          },
+        ],
+      },
+    });
+
+    if (!users) {
+      return res.status(400).json({
+        message: "User not found",
       });
     }
-
-    let query = `INSERT INTO users (username, password) VALUES ("${username}", "${hash}")`;
-
-    pool
-      .query(query)
-      .then((result: IMySQLResult) => {
-        signJWT(result.insertId, (_error, token) => {
+    bcryptjs.compare(password, users.dataValues.password, (error, result) => {
+      if (error || !result) {
+        return res.status(401).json({
+          message: "Password Mismatch",
+        });
+      } else if (result) {
+        signJWT(users.dataValues.id, (_error, token) => {
           if (_error) {
             return res.status(401).json({
               message: "Unable to Sign JWT",
               error: _error,
             });
           } else if (token) {
-            res.status(200).json({
+            return res.status(200).json({
               message: "Auth Successful",
               token,
-              user_id: result.insertId,
+              user: users[0],
             });
           }
         });
-      })
-      .catch((error: any) => {
-        logging.error(NAMESPACE, error.message, error);
-
-        return res.status(500).json({
-          message: error.message,
-          error,
-        });
-      });
-  });
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err.message,
+      err,
+    });
+  }
 };
 
-const registerGmail = async (
+const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
+  let { email } = req.body;
+
+  try {
+    let signedId: number;
+    const users = await User.findOne({
+      where: {
+        email,
+        provider: "google",
+      },
+    });
+    if (!users) {
+      const { id } = await User.create({
+        email,
+        provider: "google",
+        username: crypto.randomBytes(16).toString("hex"),
+        password: crypto.randomBytes(16).toString("hex"),
+      });
+      signedId = id;
+    } else {
+      signedId = users.dataValues.id;
+    }
+    signJWT(signedId, (_error, token) => {
+      if (_error) {
+        return res.status(401).json({
+          message: "Unable to Sign JWT",
+
+          error: _error,
+        });
+      } else if (token) {
+        return res.status(200).json({
+          message: "Auth Successful",
+          token,
+          user: signedId,
+        });
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err.message,
+      err,
+    });
+  }
+};
+
+const getProfile = async (req: Request, res: Response, next: NextFunction) => {
+  let user_id = res.locals.jwt.user_id;
+
+  try {
+    const users = await User.findOne({
+      where: {
+        id: user_id,
+      },
+      include: {
+        model: Profile,
+      },
+    });
+    return res.status(200).json(users.dataValues);
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err.message,
+      err,
+    });
+  }
+};
+
+const updateProfile = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  let { email } = req.body;
-
-  let query = `INSERT INTO users (email) VALUES ("${email}")`;
-  let queryGet = `SELECT * FROM users WHERE email = '${email}'`;
+  let { nama_toko, display_name, profile_picture, id } = req.body;
+  let user_id = res.locals.jwt.user_id;
 
   try {
-    const users = await pool.query(queryGet);
-    if (users.length != 0) {
-      signJWT(users[0].user_id, (_error, token) => {
-        if (_error) {
-          return res.status(401).json({
-            message: "Unable to Sign JWT",
-            error: _error,
-          });
-        } else if (token) {
-          res.status(200).json({
-            message: "Auth Successful",
-            token,
-            user: users[0],
-          });
-        }
-      });
-      return;
-    }
-  } catch (error: any) {
+    await Profile.upsert({
+      id,
+      storeName: nama_toko,
+      displayName: display_name,
+      profilePicture: profile_picture,
+      UserId: user_id,
+    });
+    return res.status(201).json({
+      message: "Nama toko updated",
+    });
+  } catch (err: any) {
     return res.status(500).json({
-      message: error.message,
-      error,
+      message: err.message,
+      err,
     });
   }
-  pool
-    .query(query)
-    .then((result: IMySQLResult) => {
-      logging.info(NAMESPACE, `User with id ${result.insertId} inserted.`);
-      signJWT(result.insertId, (_error, token) => {
-        if (_error) {
-          return res.status(401).json({
-            message: "Unable to Sign JWT",
-            error: _error,
-          });
-        } else if (token) {
-          return res.status(200).json({
-            message: "Auth Successful",
-            token,
-            user_id: result.insertId,
-          });
-        }
-      });
-    })
-    .catch((error: any) => {
-      logging.error(NAMESPACE, error.message, error);
-
-      return res.status(500).json({
-        message: error.message,
-        error,
-      });
-    });
-};
-
-const login = (req: Request, res: Response, next: NextFunction) => {
-  let { username, password } = req.body;
-
-  let query = `SELECT * FROM users WHERE username = '${username}'`;
-
-  pool
-    .query(query)
-    .then((users: IUser[]) => {
-      if (users.length == 0) {
-        return res.status(400).json({
-          message: "User not found",
-        });
-      }
-      bcryptjs.compare(password, users[0].password, (error, result) => {
-        if (error || !result) {
-          return res.status(401).json({
-            message: "Password Mismatch",
-          });
-        } else if (result) {
-          signJWT(users[0].user_id, (_error, token) => {
-            if (_error) {
-              return res.status(401).json({
-                message: "Unable to Sign JWT",
-                error: _error,
-              });
-            } else if (token) {
-              return res.status(200).json({
-                message: "Auth Successful",
-                token,
-                user: users[0],
-              });
-            }
-          });
-        }
-      });
-    })
-    .catch((error: any) => {
-      logging.error(NAMESPACE, error.message, error);
-
-      return res.status(500).json({
-        message: error.message,
-        error,
-      });
-    });
-};
-
-const loginGmail = (req: Request, res: Response, next: NextFunction) => {
-  let { email } = req.body;
-
-  let query = `SELECT * FROM users WHERE email = '${email}'`;
-
-  pool
-    .query(query)
-    .then((users: IUser[]) => {
-      if (users.length == 0) {
-        return res.status(400).json({
-          message: "User not found",
-        });
-      }
-      signJWT(users[0].user_id, (_error, token) => {
-        if (_error) {
-          return res.status(401).json({
-            message: "Unable to Sign JWT",
-
-            error: _error,
-          });
-        } else if (token) {
-          return res.status(200).json({
-            message: "Auth Successful",
-            token,
-            user: users[0],
-          });
-        }
-      });
-    })
-    .catch((error: any) => {
-      logging.error(NAMESPACE, error.message, error);
-      return res.status(500).json({
-        message: error.message,
-        error,
-      });
-    });
-};
-
-const getAllUsers = (req: Request, res: Response, next: NextFunction) => {
-  let query = `SELECT * FROM users`;
-
-  pool
-    .query(query)
-    .then((users: IUser[]) => {
-      return res.status(200).json({
-        users,
-        count: users.length,
-      });
-    })
-    .catch((error: any) => {
-      logging.error(NAMESPACE, error.message, error);
-      return res.status(500).json({
-        message: error.message,
-        error,
-      });
-    });
-};
-
-const getProfile = (req: Request, res: Response, next: NextFunction) => {
-  let user_id = res.locals.jwt.user_id;
-  let query = `SELECT * FROM users WHERE user_id = ${user_id}`;
-
-  pool
-    .query(query)
-    .then((users: any) => {
-      return res.status(200).json(users[0]);
-    })
-    .catch((error: any) => {
-      logging.error(NAMESPACE, error.message, error);
-
-      return res.status(500).json({
-        message: error.message,
-        error,
-      });
-    });
-};
-
-const updateProfile = (req: Request, res: Response, next: NextFunction) => {
-  let { nama_toko, display_name, profile_picture } = req.body;
-  let user_id = res.locals.jwt.user_id;
-  const query = generateEditQuery(
-    "users",
-    serializePayloadtoQuery({
-      nama_toko,
-      display_name,
-      profile_picture,
-    }),
-    serializePayloadtoQuery(
-      {
-        user_id,
-      },
-      true
-    )
-  );
-
-  pool
-    .query(query)
-    .then((result: IMySQLResult) => {
-      return res.status(201).json({
-        message: "Nama toko updated",
-      });
-    })
-    .catch((error: any) => {
-      logging.error(NAMESPACE, error.message, error);
-
-      return res.status(500).json({
-        message: error.message,
-        error,
-      });
-    });
 };
 
 export const updateProfilePassword = async (req: Request, res: Response) => {
   let { current_password, new_password } = req.body;
   try {
     const user_id = res.locals.jwt.user_id;
-    const query = `SELECT password FROM users WHERE user_id = ${user_id}`;
-    const data = await pool.query(query);
-    const result = await bcryptjs.compare(current_password, data[0]?.password);
+
+    const users = await User.findOne({
+      where: {
+        id: user_id,
+      },
+    });
+    const result = await bcryptjs.compare(
+      current_password,
+      users.dataValues.password
+    );
     let statusCode = 200;
     let message = "Succesfully change password";
     if (!result) {
       statusCode = 200;
       message = "Wrong password. Please recheck again";
     } else {
-      const updatePasswordQuery = generateEditQuery(
-        "users",
-        serializePayloadtoQuery({
+      await User.update(
+        {
           password: await bcryptjs.hash(new_password, 10),
-        }),
-        serializePayloadtoQuery(
-          {
-            user_id,
+        },
+        {
+          where: {
+            id: user_id,
           },
-          true
-        )
+        }
       );
-      await pool.query(updatePasswordQuery);
     }
-    res.status(statusCode).send({
+    return res.status(statusCode).send({
       message,
     });
   } catch (error: any) {
-    logging.error(NAMESPACE, error.message, error);
     return res.status(500).json({
       message: error.message,
       error,
@@ -340,8 +254,6 @@ export default {
   validateToken,
   register,
   login,
-  getAllUsers,
-  registerGmail,
   loginGmail,
   updateProfile,
   getProfile,

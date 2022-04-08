@@ -16,12 +16,12 @@ export default (sequelize: Sequelize, DataTypes: any) => {
   }
   Transaction.init(
     {
-      nominal: DataTypes.INTEGER,
-      name: {
+      nominal: { type: DataTypes.INTEGER, defaultValue: 0 },
+      type: {
         type: DataTypes.STRING,
         validate: {
-          customValidator: (value: string) => {
-            const enums = ["income", "outcome", "buy", "sell"];
+          customValidator: (value: number) => {
+            const enums = [1, 2, 3, 4];
             if (!enums.includes(value)) {
               throw new Error("Not a valid option");
             }
@@ -29,6 +29,9 @@ export default (sequelize: Sequelize, DataTypes: any) => {
         },
       },
       transaction_date: DataTypes.DATE,
+      title: DataTypes.STRING,
+      notes: DataTypes.STRING,
+      deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
     },
     {
       sequelize,
