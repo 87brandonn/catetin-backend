@@ -165,6 +165,8 @@ const getProfile = async (req: Request, res: Response, next: NextFunction) => {
   let user_id = res.locals.jwt.user_id;
 
   try {
+    let statusCode = 200;
+    let message = "Succesfully get user data";
     const users = await User.findOne({
       where: {
         id: user_id,
@@ -174,14 +176,13 @@ const getProfile = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
     if (!users) {
-      res.send(404).send({
-        message: "User not exist",
-      });
-      return;
+      statusCode = 404;
+      message = "User not exist";
     }
-    res
-      .status(200)
-      .json({ data: users.dataValues, message: "Succesfully get user data" });
+    res.status(statusCode).send({
+      message,
+      data: users?.dataValues,
+    });
   } catch (err: any) {
     res.status(500).json({
       message: err.message,
