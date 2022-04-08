@@ -173,7 +173,14 @@ const getProfile = async (req: Request, res: Response, next: NextFunction) => {
         model: Profile,
       },
     });
-    return res.status(200).json(users.dataValues);
+    if (!users) {
+      return res.send(404).send({
+        message: "User not exist",
+      });
+    }
+    return res
+      .status(200)
+      .json({ data: users.dataValues, message: "Succesfully get user data" });
   } catch (err: any) {
     return res.status(500).json({
       message: err.message,
