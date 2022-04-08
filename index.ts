@@ -18,7 +18,7 @@ db.sequelize
     alter: true,
   })
   .then(() => {
-    console.log("Synced");
+    console.log("Connection established");
     app.listen(PORT, () => {
       console.log(
         `⚡️[server]: Server is running at https://localhost:${PORT}`
