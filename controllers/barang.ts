@@ -72,6 +72,8 @@ const getListBarang = async (
   const { sort, nama_barang } = req.query;
   const order = getOrderQuery(sort as string);
 
+  console.log(order);
+
   const orderQuery = {};
   const whereQuery = {};
   if (sort) {

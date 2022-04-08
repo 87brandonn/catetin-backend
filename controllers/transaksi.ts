@@ -248,6 +248,29 @@ const getTransaksi = async (
   }
 };
 
+const getTransaksiById = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const data = await Transaction.findOne({
+      where: {
+        id,
+      },
+      include: {
+        model: Item,
+      },
+    });
+    return res
+      .status(200)
+      .send({ data, message: "Succesfully get transaction" });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message,
+      error,
+    });
+  }
+};
+
 const updateTransaksi = async (req: Request, res: Response) => {
   let { title, tipe_transaksi, tanggal, total, notes, transaksi_id } = req.body;
 
@@ -398,6 +421,7 @@ export default {
   insertTransaksiDetail,
   updateTransaksiDetail,
   getTransaksi,
+  getTransaksiById,
   updateTransaksi,
   deleteTransaksi,
   getTransaksiReport,
