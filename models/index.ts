@@ -1,29 +1,31 @@
 import fs from "fs";
 import path from "path";
 import { DataTypes, Sequelize } from "sequelize";
-// const sequelize = new Sequelize({
-//   dialect: "postgres",
-//   username: "mtrennrleqlasm",
-//   database: "dbt1pukqt89bes",
-//   host: "ec2-54-160-109-68.compute-1.amazonaws.com",
-//   port: 5432,
-//   password: "abbcb23453e0ecad2e757ab9c8a702600ee30333b5c5bcb4a44caa1988712ce5",
-//   dialectOptions: {
-//     ssl: {
-//       require: true,
-//       rejectUnauthorized: false,
-//     },
-//   },
-// });
+import dotenv from "dotenv";
+dotenv.config();
+
 const filebasename = path.basename(__filename);
-const sequelize = new Sequelize({
-  dialect: "postgres",
-  username: "brandonpardede",
-  database: "catetin-local",
-  host: "localhost",
-  port: 5432,
-  password: "brandon00",
-});
+const isProduction = process.env.NODE_ENV === "production";
+const options = isProduction
+  ? {
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
+        },
+      },
+    }
+  : {};
+
+const sequelize = new Sequelize(
+  isProduction
+    ? (process.env.HEROKU_POSTGRESQL_MAUVE_URL as string)
+    : `postgres://brandonpardede:brandon00@localhost:5432/catetin-local`,
+  {
+    dialect: "postgres",
+    ...options,
+  }
+);
 
 const db: any = {};
 fs.readdirSync(__dirname)
