@@ -13,26 +13,15 @@ app.use(bodyParser.json());
 
 app.use("/", routes);
 
-const isProduction = process.env.NODE_ENV === "production";
-
-if (isProduction) {
-  app.listen(PORT, () => {
-    console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
-  });
-} else {
-  db.sequelize
-    .sync({
-      alter: true,
-    })
-    .then(() => {
-      console.log("Synced");
-      app.listen(PORT, () => {
-        console.log(
-          `⚡️[server]: Server is running at https://localhost:${PORT}`
-        );
-      });
-    })
-    .catch((err: any) => {
-      console.log(err);
+db.sequelize
+  .sync({
+    alter: true,
+  })
+  .then(() => {
+    console.log("Synced");
+    app.listen(PORT, () => {
+      console.log(
+        `⚡️[server]: Server is running at https://localhost:${PORT}`
+      );
     });
-}
+  });

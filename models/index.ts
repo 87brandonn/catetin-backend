@@ -6,26 +6,19 @@ dotenv.config();
 
 const filebasename = path.basename(__filename);
 const isProduction = process.env.NODE_ENV === "production";
-const options = isProduction
-  ? {
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false,
-        },
-      },
-    }
-  : {};
 
-const sequelize = new Sequelize(
-  isProduction
-    ? (process.env.HEROKU_POSTGRESQL_MAUVE_URL as string)
-    : `postgres://brandonpardede:brandon00@localhost:5432/catetin-local`,
-  {
-    dialect: "postgres",
-    ...options,
-  }
-);
+const { PSQL_HOST, PSQL_DATABASE, PSQL_PORT, PSQL_PASSWORD, PSQL_USER } =
+  process.env;
+
+const databaseOptions: any = {
+  host: PSQL_HOST,
+  username: PSQL_USER,
+  password: PSQL_PASSWORD,
+  port: PSQL_PORT,
+  database: PSQL_DATABASE,
+};
+
+const sequelize = new Sequelize({ ...databaseOptions, dialect: "postgres" });
 
 const db: any = {};
 fs.readdirSync(__dirname)
