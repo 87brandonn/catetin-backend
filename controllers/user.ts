@@ -196,15 +196,15 @@ const updateProfile = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { nama_toko, display_name, profile_picture, id } = req.body;
+  let { storeName, displayName, profilePicture, id } = req.body;
   let user_id = res.locals.jwt.user_id;
 
   try {
     await Profile.upsert({
       id,
-      storeName: nama_toko,
-      displayName: display_name,
-      profilePicture: profile_picture,
+      storeName,
+      displayName,
+      profilePicture,
       UserId: user_id,
     });
     return res.status(201).json({
