@@ -33,7 +33,7 @@ fs.readdirSync(__dirname)
     const returnFile =
       file.indexOf(".") !== 0 &&
       file !== filebasename &&
-      file.slice(-3) === ".ts";
+      file.slice(-3) === `.${isProduction ? "js" : "ts"}`;
     return returnFile;
   })
   .forEach((file) => {
