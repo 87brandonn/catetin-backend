@@ -10,16 +10,16 @@ const insertBarang = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { nama_barang, harga, barang_picture } = req.body;
+  let { name, price, picture } = req.body;
 
   let user_id = res.locals.jwt.user_id;
 
   try {
     const data = await Item.create({
       stock: 0,
-      name: nama_barang,
-      price: harga,
-      picture: barang_picture,
+      name,
+      price,
+      picture,
       UserId: user_id,
     });
     res.status(200).send({
@@ -38,18 +38,18 @@ const updateBarang = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { barang_id, nama_barang, harga, barang_picture } = req.body;
+  let { id, name, price, picture } = req.body;
 
   try {
     const data = await Item.update(
       {
-        name: nama_barang,
-        price: harga,
-        picture: barang_picture,
+        name,
+        price,
+        picture,
       },
       {
         where: {
-          id: barang_id,
+          id,
         },
       }
     );
@@ -120,7 +120,7 @@ const getBarangDetail = async (req: Request, res: Response) => {
     });
   }
   try {
-    const data = await Item.findAll({
+    const data = await Item.findOne({
       where: {
         id,
       },
