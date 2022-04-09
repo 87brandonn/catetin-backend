@@ -308,7 +308,8 @@ const updateTransaksi = async (req: Request, res: Response) => {
         title,
         type: tipe_transaksi,
         transaction_date: tanggal,
-        nominal: tipe_transaksi === 3 || tipe_transaksi === 4 ? 0 : total,
+        nominal:
+          tipe_transaksi === 3 || tipe_transaksi === 4 ? undefined : total,
         notes,
       },
       {
