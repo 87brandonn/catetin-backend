@@ -264,6 +264,7 @@ const getTransaksi = async (
       include: {
         model: Item,
       },
+      order: [["updatedAt", "DESC"]],
     });
     return res
       .status(200)

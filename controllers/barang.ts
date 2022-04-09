@@ -73,14 +73,9 @@ const getListBarang = async (
   const { sort, nama_barang, transactionId } = req.query;
   const order = getOrderQuery(sort as string);
 
-  const orderQuery = {};
+  const orderQuery = [];
   const whereQuery = {};
 
-  if (sort) {
-    Object.assign(orderQuery, {
-      order,
-    });
-  }
   if (nama_barang) {
     Object.assign(whereQuery, {
       name: {
@@ -96,7 +91,7 @@ const getListBarang = async (
         deleted: false,
         ...whereQuery,
       },
-      ...orderQuery,
+      order: [["updatedAt", "DESC"], ...(order || [])],
       include: {
         model: Transaction,
       },
