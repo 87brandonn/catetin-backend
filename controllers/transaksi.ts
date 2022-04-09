@@ -316,10 +316,11 @@ const updateTransaksi = async (req: Request, res: Response) => {
         where: {
           id: transaksi_id,
         },
+        returning: true,
       }
     );
     return res.status(200).json({
-      data,
+      data: data[1],
       message: "success",
     });
   } catch (error: any) {
