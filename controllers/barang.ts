@@ -11,13 +11,13 @@ const insertBarang = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { name, price, picture } = req.body;
+  let { name, price, picture, stock = 0 } = req.body;
 
   let user_id = res.locals.jwt.user_id;
 
   try {
     const data = await Item.create({
-      stock: 0,
+      stock,
       name,
       price,
       picture,
