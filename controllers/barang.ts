@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { Op } from "sequelize";
+import { ICatetinBarangWithTransaksi } from "../interfaces/barang";
 import models from "../models";
 import { getOrderQuery } from "./../utils/index";
 
@@ -69,13 +70,12 @@ const getListBarang = async (
   next: NextFunction
 ) => {
   let user_id = res.locals.jwt.user_id;
-  const { sort, nama_barang } = req.query;
+  const { sort, nama_barang, transactionId } = req.query;
   const order = getOrderQuery(sort as string);
-
-  console.log(order);
 
   const orderQuery = {};
   const whereQuery = {};
+
   if (sort) {
     Object.assign(orderQuery, {
       order,
@@ -90,14 +90,29 @@ const getListBarang = async (
   }
 
   try {
-    const data = await Item.findAll({
+    let data: ICatetinBarangWithTransaksi[] = await Item.findAll({
       where: {
         UserId: user_id,
         deleted: false,
         ...whereQuery,
       },
       ...orderQuery,
+      include: {
+        model: Transaction,
+      },
     });
+
+    if (transactionId) {
+      data = data.filter((item) => {
+        const isNotIncludeTransaction =
+          item.Transactions.findIndex(
+            (transaction) =>
+              transaction.id === parseInt(transactionId as string, 10)
+          ) === -1;
+        return isNotIncludeTransaction;
+      });
+    }
+
     res.status(200).send({
       data,
       message: "Succesfully get barang",

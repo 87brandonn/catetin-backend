@@ -1,13 +1,17 @@
-export default interface IBarang {
-  barang_id: number;
-  user_id: number;
-  stok: number;
-  nama_barang: string;
-  created_at: string;
-  updated_at: string;
-  barang_picture: string;
+import { ICatetinTransaksi, ICatetinTransaksiDetail } from './transaksi';
+
+export interface ICatetinBarang {
+  UserId: number;
+  createdAt: Date;
+  deleted: boolean;
+  id: number;
+  name: string;
+  picture: string;
+  price: number;
+  stock: number;
+  updatedAt: Date;
 }
 
-export interface IBarangPayload extends IBarang {
-  amount: number;
-}
+export type ICatetinBarangWithTransaksi = ICatetinBarang & {
+  Transactions: (ICatetinTransaksiDetail & ICatetinTransaksi)[];
+};

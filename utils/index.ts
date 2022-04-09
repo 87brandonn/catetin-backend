@@ -1,4 +1,5 @@
-import { ITransaksiWithDetail } from "../interfaces/transaksi";
+import moment from "moment";
+import { ICatetinTransaksiWithDetail } from "../interfaces/transaksi";
 
 export const serializePayloadtoQuery = (
   object: Record<string, any>,
@@ -29,9 +30,9 @@ export const generateEditQuery = (
   return `UPDATE ${tableName} SET ${setQuery} WHERE ${conditionalQuery}`;
 };
 
-export function groupDataByDate(data: ITransaksiWithDetail[]) {
+export function groupDataByDate(data: ICatetinTransaksiWithDetail[]) {
   return data.reduce((groups: any, game) => {
-    const date = game.transaction_date.split("T")[0];
+    const date = moment(game.transaction_date).toISOString().split("T")[0];
     if (!groups[date]) {
       groups[date] = [];
     }

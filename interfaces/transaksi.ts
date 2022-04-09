@@ -1,24 +1,24 @@
-import IBarang from "./barang";
-
-export default interface ITransaksi {
+import { ICatetinBarang } from './barang';
+export interface ICatetinTransaksi {
   id: number;
-  UserId: number;
-  type: number;
   nominal: number;
-  createdAt: string;
-  updatedAt: string;
-  transaction_date: string;
+  type: string;
+  transaction_date: Date;
   title: string;
   notes: string;
+  deleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  UserId: number;
 }
-
-export interface ITransaksiDetail {
-  id: number;
-  ItemId: number;
+export interface ICatetinTransaksiDetail {
   amount: number;
+  deleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  ItemId: number;
   TransactionId: number;
 }
-
-export interface ITransaksiWithDetail extends ITransaksi {
-  transaksi_detail: (ITransaksiDetail & IBarang)[];
-}
+export type ICatetinTransaksiWithDetail = ICatetinTransaksi & {
+  Items: ({ ItemTransaction: ICatetinTransaksiDetail } & ICatetinBarang)[];
+};
