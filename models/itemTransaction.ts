@@ -14,6 +14,7 @@ export default (sequelize: Sequelize, DataTypes: any) => {
   ItemTransaction.init(
     {
       amount: DataTypes.INTEGER,
+      total: DataTypes.INTEGER,
     },
     {
       sequelize,

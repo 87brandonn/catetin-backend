@@ -67,6 +67,7 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
       promises.push(
         ItemTransaction.create({
           amount,
+          total: price * amount,
           ItemId: barang_id,
           TransactionId: transaksi_id,
         })
