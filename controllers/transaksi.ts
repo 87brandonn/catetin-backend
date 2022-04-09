@@ -51,10 +51,23 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
         },
       });
 
+      await ItemTransaction.create({
+        amount,
+        total: price * amount,
+        ItemId: barang_id,
+        TransactionId: transaksi_id,
+      });
+
+      const sumTotal = await ItemTransaction.sum("total", {
+        where: {
+          TransactionId: transaksi_id,
+        },
+      });
+
       promises.push(
         Transaction.update(
           {
-            nominal: price * amount,
+            nominal: sumTotal,
           },
           {
             where: {
@@ -64,14 +77,6 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
         )
       );
 
-      promises.push(
-        ItemTransaction.create({
-          amount,
-          total: price * amount,
-          ItemId: barang_id,
-          TransactionId: transaksi_id,
-        })
-      );
       if (type == 3) {
         promises.push(
           Item.update(
@@ -132,16 +137,41 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
 
   try {
     if (type == 3 || type == 4) {
+      const {
+        dataValues: { price },
+      } = await Item.findOne({
+        where: {
+          id: barang_id,
+        },
+      });
+      await ItemTransaction.update(
+        {
+          amount,
+          total: price * amount,
+        },
+        {
+          where: { ItemId: barang_id, TransactionId: transaksi_id },
+        }
+      );
+      const sumTotal = await ItemTransaction.sum("total", {
+        where: {
+          TransactionId: transaksi_id,
+        },
+      });
+
       promises.push(
-        ItemTransaction.update(
+        Transaction.update(
           {
-            amount,
+            nominal: sumTotal,
           },
           {
-            where: { ItemId: barang_id, TransactionId: transaksi_id },
+            where: {
+              id: transaksi_id,
+            },
           }
         )
       );
+
       if (type == 3) {
         const {
           dataValues: { amount: amountTransactionItem },
