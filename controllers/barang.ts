@@ -154,4 +154,34 @@ const getBarangDetail = async (req: Request, res: Response) => {
   }
 };
 
-export default { insertBarang, updateBarang, getListBarang, getBarangDetail };
+const deleteBarang = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const data = await Item.update(
+      {
+        deleted: true,
+      },
+      {
+        where: {
+          id,
+        },
+      }
+    );
+    res.status(200).send({
+      data,
+      message: "Succesfully delete barang",
+    });
+  } catch (err) {
+    res.status(500).send({
+      message: "An error ocured",
+    });
+  }
+};
+
+export default {
+  insertBarang,
+  updateBarang,
+  getListBarang,
+  getBarangDetail,
+  deleteBarang,
+};
