@@ -1,4 +1,4 @@
-import { ICatetinBarang } from './barang';
+import { ICatetinBarang } from "./barang";
 export interface ICatetinTransaksi {
   id: number;
   nominal: number;
@@ -13,6 +13,7 @@ export interface ICatetinTransaksi {
 }
 export interface ICatetinTransaksiDetail {
   amount: number;
+  total: number;
   deleted: boolean;
   createdAt: Date;
   updatedAt: Date;

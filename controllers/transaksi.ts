@@ -1,5 +1,8 @@
+import { ICatetinBarang } from "./../interfaces/barang";
 import { NextFunction, Request, Response } from "express";
+import { Op } from "sequelize";
 import { default as db, default as model } from "../models";
+import { ICatetinTransaksiDetail } from "../interfaces/transaksi";
 
 const { Transaction, ItemTransaction, Item } = model;
 
@@ -418,33 +421,153 @@ const deleteTransaksi = async (req: Request, res: Response) => {
   }
 };
 
-// const getTransaksiReport = async (req: Request, res: Response) => {
-//   let user_id = res.locals.jwt.user_id;
+const getTransactionSummary = async (req: Request, res: Response) => {
+  let user_id = res.locals.jwt.user_id;
+  const {
+    total_income,
+    total_outcome,
+    impression,
+    frequent_item,
+    best_item,
+    max_outcome,
+    max_income,
+    date,
+  } = req.query;
 
-//   try {
-//     const queryTransaksi = `SELECT * FROM transaksi WHERE user_id = ${user_id}`;
-//     const transaksiData: ITransaksi[] = await pool.query(queryTransaksi);
-//     const transaksiDataWithDetail = await Promise.all(
-//       transaksiData.map(async (transaksi) => {
-//         const queryTransaksiDetail = `SELECT * FROM transaksi_detail td INNER JOIN barang b ON td.barang_id = b.barang_id WHERE td.transaksi_id = ${transaksi.id} `;
-//         const transaksiDetailResult = await pool.query(queryTransaksiDetail);
-//         return {
-//           ...transaksi,
-//           transaksi_detail: transaksiDetailResult,
-//         };
-//       })
-//     );
-//     res.status(200).send({
-//       data: groupDataByDate(transaksiDataWithDetail),
-//       message: "Succesfully get transaction report",
-//     });
-//   } catch (err: any) {
-//     return res.status(500).json({
-//       message: err.message,
-//       err,
-//     });
-//   }
-// };
+  let query = {};
+  if (total_income) {
+    Object.assign(query, {
+      type: {
+        [Op.or]: ["3", "2"],
+      },
+    });
+  } else if (total_outcome) {
+    Object.assign(query, {
+      type: {
+        [Op.or]: ["1", "4"],
+      },
+    });
+  }
+
+  try {
+    let finalData;
+    if (impression) {
+      const income = await Transaction.sum("nominal", {
+        where: {
+          UserId: user_id,
+          type: {
+            [Op.or]: ["3", "2"],
+          },
+        },
+      });
+      const outcome = await Transaction.sum("nominal", {
+        where: {
+          UserId: user_id,
+          type: {
+            [Op.or]: ["1", "4"],
+          },
+        },
+      });
+      finalData = {
+        value: Math.abs(income - outcome),
+        profit: income - outcome > 0,
+      };
+    } else if (best_item) {
+      let data = await ItemTransaction.findAll({
+        where: {
+          "$Item.UserId$": user_id,
+        },
+        attributes: [
+          "ItemId",
+          "$Item.id$",
+          [db.sequelize.fn("sum", db.sequelize.col("amount")), "total_amount"],
+        ],
+        include: [
+          {
+            model: Item,
+            required: true,
+          },
+        ],
+        group: ["ItemId", "$Item.id$"],
+      });
+      finalData = data;
+    } else if (frequent_item) {
+      let data = await ItemTransaction.findAll({
+        attributes: [
+          "ItemId",
+          [db.sequelize.fn("sum", db.sequelize.col("amount")), "total_amount"],
+        ],
+        group: ["ItemId"],
+        // include: [
+        //   {
+        //     model: Item,
+        //   },
+        // ],
+      });
+      finalData = data;
+    } else if (max_income) {
+      const data = await Transaction.findAll({
+        where: {
+          UserId: user_id,
+          type: ["2", "3"],
+        },
+        order: [["nominal", "DESC"]],
+        limit: 3,
+        include: [
+          {
+            model: Item,
+          },
+        ],
+      });
+      finalData = data;
+    } else if (max_outcome) {
+      const data = await Transaction.findAll({
+        where: {
+          UserId: user_id,
+          type: ["1", "4"],
+        },
+        order: [["nominal", "DESC"]],
+        limit: 3,
+        include: [
+          {
+            model: Item,
+          },
+        ],
+      });
+      finalData = data;
+    } else if (date) {
+      const data = await Transaction.findAll({
+        where: {
+          UserId: user_id,
+        },
+        attributes: [
+          [db.sequelize.literal(`DATE("transaction_date")`), "date"],
+          [db.sequelize.literal(`COUNT(*)`), "count"],
+        ],
+        group: ["date"],
+      });
+      finalData = data;
+    } else {
+      const data = await Transaction.sum("nominal", {
+        where: {
+          UserId: user_id,
+          ...query,
+        },
+      });
+      finalData = data;
+    }
+    res.send({
+      data: finalData,
+      message: "Succesfully get summary transaction",
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({
+      message: "Failed to get summary",
+      err: JSON.stringify(err),
+    });
+  }
+};
 
 export default {
   insertTransaksi,
@@ -454,5 +577,6 @@ export default {
   getTransaksiById,
   updateTransaksi,
   deleteTransaksi,
+  getTransactionSummary,
   // getTransaksiReport,
 };

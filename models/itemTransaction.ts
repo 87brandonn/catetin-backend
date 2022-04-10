@@ -8,6 +8,8 @@ export default (sequelize: Sequelize, DataTypes: any) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models: any) {
+      ItemTransaction.belongsTo(models.Item);
+      ItemTransaction.belongsTo(models.Transaction);
       // define association here
     }
   }
