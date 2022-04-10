@@ -29,6 +29,17 @@ export default (sequelize: Sequelize, DataTypes: any) => {
           },
         },
       },
+      rootType: {
+        type: DataTypes.STRING,
+        validate: {
+          customValidator: (value: string) => {
+            const enums = ["income", "outcome"];
+            if (!enums.includes(value)) {
+              throw new Error("Not a valid option");
+            }
+          },
+        },
+      },
       transaction_date: DataTypes.DATE,
       title: DataTypes.STRING,
       notes: DataTypes.STRING,

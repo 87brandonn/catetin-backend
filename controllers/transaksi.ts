@@ -15,6 +15,8 @@ const insertTransaksi = async (req: Request, res: Response) => {
       UserId: user_id,
       nominal: tipe_transaksi === 3 || tipe_transaksi === 4 ? 0 : total,
       transaction_date: tanggal,
+      rootType:
+        tipe_transaksi === 3 || tipe_transaksi === 2 ? "income" : "outcome",
       title,
       type: tipe_transaksi,
       notes,
@@ -437,15 +439,11 @@ const getTransactionSummary = async (req: Request, res: Response) => {
   let query = {};
   if (total_income) {
     Object.assign(query, {
-      type: {
-        [Op.or]: ["3", "2"],
-      },
+      rootType: "income",
     });
   } else if (total_outcome) {
     Object.assign(query, {
-      type: {
-        [Op.or]: ["1", "4"],
-      },
+      rootType: "outcome",
     });
   }
 
@@ -455,17 +453,13 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       const income = await Transaction.sum("nominal", {
         where: {
           UserId: user_id,
-          type: {
-            [Op.or]: ["3", "2"],
-          },
+          rootType: "income",
         },
       });
       const outcome = await Transaction.sum("nominal", {
         where: {
           UserId: user_id,
-          type: {
-            [Op.or]: ["1", "4"],
-          },
+          rootType: "outcome",
         },
       });
       finalData = {
@@ -473,43 +467,52 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         profit: income - outcome > 0,
       };
     } else if (best_item) {
-      let data = await ItemTransaction.findAll({
-        where: {
-          "$Item.UserId$": user_id,
+      let data = await Item.findAll({
+        attributes: {
+          include: [
+            [
+              db.sequelize.literal(`(
+                  SELECT coalesce(SUM(total), 0)
+                  FROM (SELECT * FROM "ItemTransactions" INNER JOIN "Transactions" ON "Transactions"."id" = "ItemTransactions"."TransactionId") AS "iwt"
+                  WHERE
+                    "iwt"."ItemId" = "Item"."id" AND 
+                    "iwt"."type" = '3'
+
+              )`),
+              "total_nominal_transactions",
+            ],
+          ],
         },
-        attributes: [
-          "ItemId",
-          "$Item.id$",
-          [db.sequelize.fn("sum", db.sequelize.col("amount")), "total_amount"],
-        ],
-        include: [
-          {
-            model: Item,
-            required: true,
-          },
-        ],
-        group: ["ItemId", "$Item.id$"],
+        order: [[db.sequelize.col("total_nominal_transactions"), "DESC"]],
+        limit: 3,
       });
       finalData = data;
     } else if (frequent_item) {
-      let data = await ItemTransaction.findAll({
-        attributes: [
-          "ItemId",
-          [db.sequelize.fn("sum", db.sequelize.col("amount")), "total_amount"],
-        ],
-        group: ["ItemId"],
-        // include: [
-        //   {
-        //     model: Item,
-        //   },
-        // ],
+      let data = await Item.findAll({
+        attributes: {
+          include: [
+            [
+              db.sequelize.literal(`(
+                  SELECT coalesce(SUM(amount), 0)
+                  FROM (SELECT * FROM "ItemTransactions" INNER JOIN "Transactions" ON "Transactions"."id" = "ItemTransactions"."TransactionId") AS "iwt"
+                  WHERE
+                    "iwt"."ItemId" = "Item"."id" AND 
+                    "iwt"."type" = '3'
+
+              )`),
+              "total_amount_transactions",
+            ],
+          ],
+        },
+        order: [[db.sequelize.col("total_amount_transactions"), "DESC"]],
+        limit: 3,
       });
       finalData = data;
     } else if (max_income) {
       const data = await Transaction.findAll({
         where: {
           UserId: user_id,
-          type: ["2", "3"],
+          rootType: "income",
         },
         order: [["nominal", "DESC"]],
         limit: 3,
@@ -524,7 +527,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       const data = await Transaction.findAll({
         where: {
           UserId: user_id,
-          type: ["1", "4"],
+          rootType: "outcome",
         },
         order: [["nominal", "DESC"]],
         limit: 3,
@@ -542,9 +545,10 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         },
         attributes: [
           [db.sequelize.literal(`DATE("transaction_date")`), "date"],
-          [db.sequelize.literal(`COUNT(*)`), "count"],
+          [db.sequelize.fn(`sum`, db.sequelize.col("nominal")), "sum_nominal"],
+          "rootType",
         ],
-        group: ["date"],
+        group: ["date", "rootType"],
       });
       finalData = data;
     } else {
