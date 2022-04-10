@@ -39,7 +39,7 @@ const updateBarang = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { id, name, price, picture } = req.body;
+  let { id, name, price, picture, stock } = req.body;
 
   try {
     const data = await Item.update(
@@ -47,6 +47,7 @@ const updateBarang = async (
         name,
         price,
         picture,
+        stock,
       },
       {
         where: {
@@ -73,7 +74,6 @@ const getListBarang = async (
   const { sort, nama_barang, transactionId } = req.query;
   const order = getOrderQuery(sort as string);
 
-  const orderQuery = [];
   const whereQuery = {};
 
   if (nama_barang) {
@@ -91,7 +91,7 @@ const getListBarang = async (
         deleted: false,
         ...whereQuery,
       },
-      order: [["updatedAt", "DESC"], ...(order || [])],
+      order: [...(order || []), ["updatedAt", "DESC"]],
       include: {
         model: Transaction,
       },
