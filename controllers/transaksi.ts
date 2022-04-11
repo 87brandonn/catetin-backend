@@ -551,11 +551,11 @@ const getTransactionSummary = async (req: Request, res: Response) => {
           }, grouped)
           .push(a);
       });
-      grouped = Object.entries(grouped).map(([key, value]) => ({
+      const mapGrouped = Object.entries(grouped).map(([key, value]) => ({
         date: key,
         data: value,
       }));
-      finalData = grouped;
+      finalData = (mapGrouped.length > 0 && mapGrouped) || null;
     } else {
       const data = await Transaction.sum("nominal", {
         where: {
