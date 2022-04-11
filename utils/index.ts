@@ -30,14 +30,10 @@ export const generateEditQuery = (
   return `UPDATE ${tableName} SET ${setQuery} WHERE ${conditionalQuery}`;
 };
 
-export function groupDataByDate(data: ICatetinTransaksiWithDetail[]) {
-  return data.reduce((groups: any, game) => {
-    const date = moment(game.transaction_date).toISOString().split("T")[0];
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(game);
-    return groups;
+export function groupBy(xs: any[], key: string) {
+  return xs.reduce(function (rv, x) {
+    (rv[x[key]] = rv[x[key]] || []).push(x);
+    return rv;
   }, {});
 }
 

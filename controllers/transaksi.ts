@@ -1,8 +1,6 @@
-import { ICatetinBarang } from "./../interfaces/barang";
 import { NextFunction, Request, Response } from "express";
-import { Op } from "sequelize";
 import { default as db, default as model } from "../models";
-import { ICatetinTransaksiDetail } from "../interfaces/transaksi";
+import { groupBy } from "./../utils/index";
 
 const { Transaction, ItemTransaction, Item } = model;
 
@@ -539,7 +537,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       });
       finalData = data;
     } else if (date) {
-      const data = await Transaction.findAll({
+      let data = await Transaction.findAll({
         where: {
           UserId: user_id,
         },
@@ -550,7 +548,21 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         ],
         group: ["date", "rootType"],
       });
-      finalData = data;
+      let grouped = {};
+      const groups = ["date", "rootType"];
+      data.forEach(({ dataValues: a }: any) => {
+        groups
+          .reduce(function (o: any, g: any, i: any) {
+            o[a[g]] = o[a[g]] || (i + 1 === groups.length ? [] : {});
+            return o[a[g]];
+          }, grouped)
+          .push(a);
+      });
+      grouped = Object.entries(grouped).map(([key, value]) => ({
+        date: key,
+        data: value,
+      }));
+      finalData = grouped;
     } else {
       const data = await Transaction.sum("nominal", {
         where: {
