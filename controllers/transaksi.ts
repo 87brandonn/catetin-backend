@@ -397,7 +397,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     dateQueryAsString += `AND 
     "iwt"."transaction_date" BETWEEN '${moment(start_date as string).format(
       "YYYY-MM-DD"
-    )}' AND '${moment(end_date as string).format("YYYY-MM-DD")}'`;
+    )}' AND '${moment(end_date as string).format("YYYY-MM-DD HH:mm:ss")}'`;
   }
 
   let totalIOQuery = {};
@@ -458,7 +458,6 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         order: [[db.sequelize.col("total_nominal_transactions"), "DESC"]],
         limit: 3,
       });
-      console.log(data, 'Data line')
       data.forEach(({ dataValues }: any) => {
         if (dataValues.total_nominal_transactions !== "0") {
           no_transaction = false;
@@ -487,7 +486,6 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         order: [[db.sequelize.col("total_amount_transactions"), "DESC"]],
         limit: 3,
       });
-      console.log(data, 'Data line')
 
       data.forEach(({ dataValues }: any) => {
         if (dataValues.total_amount_transactions !== "0") {
