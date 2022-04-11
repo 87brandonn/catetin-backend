@@ -1,4 +1,6 @@
 import { NextFunction, Request, Response } from "express";
+import moment from "moment";
+import { Op } from "sequelize";
 import { default as db, default as model } from "../models";
 import { groupBy } from "./../utils/index";
 
@@ -338,63 +340,7 @@ const deleteTransaksi = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const promises = [];
-    // const [dataTransaksi, dataTransaksiDetail]: [
-    //   ITransaksi,
-    //   ITransaksiDetail[]
-    // ] = await Promise.all([
-    //   Transaction.findOne({
-    //     where: {
-    //       id,
-    //     },
-    //   }),
-    //   ItemTransaction.findOne({
-    //     where: {
-    //       TransactionId: id,
-    //     },
-    //   }),
-    // ]);
 
-    // // Handle update barang stok
-    // promises.push(
-    //   Promise.all(
-    //     dataTransaksiDetail.map((transaksiDetail) => {
-    //       let action = "";
-    //       if (dataTransaksi.type === 3) {
-    //         action = "+";
-    //       } else if (dataTransaksi.type === 4) {
-    //         action = "-";
-    //       }
-    //       return Item.update(
-    //         {
-    //           stock: db.sequelize.literal(
-    //             `stock ${action} ${transaksiDetail.amount} `
-    //           ),
-    //         },
-    //         {
-    //           where: {
-    //             id: transaksiDetail.ItemId,
-    //           },
-    //         }
-    //       );
-    //     })
-    //   )
-    // );
-
-    // // Handle delete transaksi detail
-    // promises.push(
-    //   ItemTransaction.update(
-    //     {
-    //       deleted: true,
-    //     },
-    //     {
-    //       where: {
-    //         TransactionId: id,
-    //       },
-    //     }
-    //   )
-    // );
-
-    // Handle delete transaksi
     promises.push(
       Transaction.update(
         {
@@ -432,16 +378,38 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     max_outcome,
     max_income,
     graph,
+    start_date,
+    end_date,
   } = req.query;
 
-  let query = {};
+  let dateQuery = {};
+  let dateQueryAsString = "";
+
+  if (start_date && end_date) {
+    Object.assign(dateQuery, {
+      transaction_date: {
+        [Op.between]: [
+          moment(start_date as string).toDate(),
+          moment(end_date as string).toDate(),
+        ],
+      },
+    });
+    dateQueryAsString += `AND 
+    "iwt"."transaction_date" BETWEEN '${moment(start_date as string).format(
+      "YYYY-MM-DD"
+    )}' AND '${moment(end_date as string).format("YYYY-MM-DD")}'`;
+  }
+
+  let totalIOQuery = {};
   if (total_income) {
-    Object.assign(query, {
+    Object.assign(totalIOQuery, {
       rootType: "income",
+      ...dateQuery,
     });
   } else if (total_outcome) {
-    Object.assign(query, {
+    Object.assign(totalIOQuery, {
       rootType: "outcome",
+      ...dateQuery,
     });
   }
 
@@ -451,13 +419,17 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       const income = await Transaction.sum("nominal", {
         where: {
           UserId: user_id,
+          deleted: false,
           rootType: "income",
+          ...dateQuery,
         },
       });
       const outcome = await Transaction.sum("nominal", {
         where: {
           UserId: user_id,
+          deleted: false,
           rootType: "outcome",
+          ...dateQuery,
         },
       });
       finalData = {
@@ -465,6 +437,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         profit: income - outcome > 0,
       };
     } else if (best_item) {
+      let no_transaction = true;
       let data = await Item.findAll({
         attributes: {
           include: [
@@ -474,8 +447,9 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                   FROM (SELECT * FROM "ItemTransactions" INNER JOIN "Transactions" ON "Transactions"."id" = "ItemTransactions"."TransactionId") AS "iwt"
                   WHERE
                     "iwt"."ItemId" = "Item"."id" AND 
-                    "iwt"."type" = '3'
-
+                    "iwt"."type" = '3' AND 
+                    "iwt"."deleted" = false
+                    ${dateQueryAsString} 
               )`),
               "total_nominal_transactions",
             ],
@@ -484,7 +458,13 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         order: [[db.sequelize.col("total_nominal_transactions"), "DESC"]],
         limit: 3,
       });
-      finalData = data;
+      data.forEach(({ dataValues }: any) => {
+        if (dataValues.total_nominal_transactions !== "0") {
+          no_transaction = false;
+          return;
+        }
+      });
+      finalData = no_transaction ? null : data;
     } else if (frequent_item) {
       let data = await Item.findAll({
         attributes: {
@@ -495,8 +475,8 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                   FROM (SELECT * FROM "ItemTransactions" INNER JOIN "Transactions" ON "Transactions"."id" = "ItemTransactions"."TransactionId") AS "iwt"
                   WHERE
                     "iwt"."ItemId" = "Item"."id" AND 
-                    "iwt"."type" = '3'
-
+                    "iwt"."deleted" = false AND
+                    "iwt"."type" = '3' ${dateQueryAsString}
               )`),
               "total_amount_transactions",
             ],
@@ -511,6 +491,8 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         where: {
           UserId: user_id,
           rootType: "income",
+          deleted: false,
+          ...dateQuery,
         },
         order: [["nominal", "DESC"]],
         limit: 3,
@@ -526,6 +508,8 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         where: {
           UserId: user_id,
           rootType: "outcome",
+          deleted: false,
+          ...dateQuery,
         },
         order: [["nominal", "DESC"]],
         limit: 3,
@@ -540,6 +524,8 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       let data = await Transaction.findAll({
         where: {
           UserId: user_id,
+          deleted: false,
+          ...dateQuery,
         },
         attributes: [
           [db.sequelize.literal(`DATE("transaction_date")`), "date"],
@@ -567,10 +553,11 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       const data = await Transaction.sum("nominal", {
         where: {
           UserId: user_id,
-          ...query,
+          deleted: false,
+          ...totalIOQuery,
         },
       });
-      finalData = data;
+      finalData = data || 0;
     }
     res.send({
       data: finalData,
