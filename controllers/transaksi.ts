@@ -396,7 +396,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     });
     dateQueryAsString += `AND 
     "iwt"."transaction_date" BETWEEN '${moment(start_date as string).format(
-      "YYYY-MM-DD"
+      "YYYY-MM-DD HH:mm:ss"
     )}' AND '${moment(end_date as string).format("YYYY-MM-DD HH:mm:ss")}'`;
   }
 
