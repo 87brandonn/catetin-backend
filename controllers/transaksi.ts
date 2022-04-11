@@ -486,12 +486,14 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         order: [[db.sequelize.col("total_amount_transactions"), "DESC"]],
         limit: 3,
       });
+
       data.forEach(({ dataValues }: any) => {
         if (dataValues.total_amount_transactions !== "0") {
           no_transaction = false;
           return;
         }
       });
+      
       finalData = no_transaction ? null : data;
     } else if (max_income) {
       const data = await Transaction.findAll({
