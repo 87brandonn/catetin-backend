@@ -431,7 +431,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     best_item,
     max_outcome,
     max_income,
-    date,
+    graph,
   } = req.query;
 
   let query = {};
@@ -536,7 +536,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         ],
       });
       finalData = data;
-    } else if (date) {
+    } else if (graph) {
       let data = await Transaction.findAll({
         where: {
           UserId: user_id,
