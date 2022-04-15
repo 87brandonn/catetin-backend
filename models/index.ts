@@ -7,8 +7,14 @@ dotenv.config();
 const filebasename = path.basename(__filename);
 const isProduction = process.env.NODE_ENV === "production";
 
-const { PSQL_HOST, PSQL_DATABASE, PSQL_PORT, PSQL_PASSWORD, PSQL_USER } =
-  process.env;
+const {
+  PSQL_HOST,
+  PSQL_DATABASE,
+  PSQL_PORT,
+  PSQL_PASSWORD,
+  PSQL_USER,
+  DATABASE_URL,
+} = process.env;
 
 const databaseOptions: any = {
   host: PSQL_HOST,
@@ -18,7 +24,20 @@ const databaseOptions: any = {
   database: PSQL_DATABASE,
 };
 
-const sequelize = new Sequelize({ ...databaseOptions, dialect: "postgres" });
+let sequelize: Sequelize;
+
+if (isProduction) {
+  sequelize = new Sequelize(DATABASE_URL as string, {
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
+  });
+} else {
+  sequelize = new Sequelize({ ...databaseOptions, dialect: "postgres" });
+}
 
 const db: any = {};
 fs.readdirSync(__dirname)
