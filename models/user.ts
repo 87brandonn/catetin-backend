@@ -11,6 +11,7 @@ export default (sequelize: Sequelize, DataTypes: any) => {
       User.hasOne(models.Profile);
       User.hasMany(models.Item);
       User.hasMany(models.Transaction);
+      User.hasOne(models.Scheduler);
     }
   }
   User.init(

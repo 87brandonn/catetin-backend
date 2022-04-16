@@ -12,7 +12,6 @@ const storage = new Storage({
 const bucket = storage.bucket("catetin-main");
 
 const postImage = async (req: Request, res: Response) => {
-  console.log(req.file);
   try {
     if (!req.file) {
       return res.status(400).send({ message: "Please upload a file!" });
@@ -64,4 +63,4 @@ const postImage = async (req: Request, res: Response) => {
   }
 };
 
-export { postImage };
+export { postImage, bucket, storage };

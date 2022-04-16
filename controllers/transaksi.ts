@@ -416,22 +416,24 @@ const getTransactionSummary = async (req: Request, res: Response) => {
   try {
     let finalData;
     if (impression) {
-      const income = await Transaction.sum("nominal", {
-        where: {
-          UserId: user_id,
-          deleted: false,
-          rootType: "income",
-          ...dateQuery,
-        },
-      });
-      const outcome = await Transaction.sum("nominal", {
-        where: {
-          UserId: user_id,
-          deleted: false,
-          rootType: "outcome",
-          ...dateQuery,
-        },
-      });
+      const income =
+        (await Transaction.sum("nominal", {
+          where: {
+            UserId: user_id,
+            deleted: false,
+            rootType: "income",
+            ...dateQuery,
+          },
+        })) || 0;
+      const outcome =
+        (await Transaction.sum("nominal", {
+          where: {
+            UserId: user_id,
+            deleted: false,
+            rootType: "outcome",
+            ...dateQuery,
+          },
+        })) || 0;
       finalData = {
         value: Math.abs(income - outcome),
         profit: income - outcome > 0,
@@ -590,5 +592,4 @@ export default {
   updateTransaksi,
   deleteTransaksi,
   getTransactionSummary,
-  // getTransaksiReport,
 };

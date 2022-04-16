@@ -1,6 +1,3 @@
-import moment from "moment";
-import { ICatetinTransaksiWithDetail } from "../interfaces/transaksi";
-
 export const serializePayloadtoQuery = (
   object: Record<string, any>,
   whereClause = false

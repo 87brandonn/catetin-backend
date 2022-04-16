@@ -1,7 +1,7 @@
 import bodyParser from "body-parser";
+import dotenv from "dotenv";
 import express from "express";
 import db from "./models";
-import dotenv from "dotenv";
 import routes from "./routes";
 dotenv.config();
 
@@ -10,7 +10,6 @@ const PORT = process.env.PORT || 8000;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
 app.use("/", routes);
 
 db.sequelize
