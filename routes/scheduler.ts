@@ -4,7 +4,7 @@ import extractJWT from "../middleware/extractJWT";
 
 const router = express.Router();
 
-router.get("/:id", extractJWT, getScheduler);
-router.post("/:id", extractJWT, addScheduler);
+router.get("/", extractJWT, getScheduler);
+router.post("/", extractJWT, addScheduler);
 
 export default router;

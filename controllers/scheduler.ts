@@ -7,11 +7,12 @@ import { triggerCron } from "../utils/cron";
 const { Scheduler, User, Profile } = model;
 
 const getScheduler = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  let user_id = res.locals.jwt.user_id;
+
   try {
     const data = await Scheduler.findOne({
       where: {
-        UserId: id,
+        UserId: user_id,
       },
     });
     res.status(200).send({
@@ -26,7 +27,7 @@ const getScheduler = async (req: Request, res: Response) => {
 };
 
 const addScheduler = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  let user_id = res.locals.jwt.user_id;
   const {
     minute,
     second,
@@ -40,7 +41,7 @@ const addScheduler = async (req: Request, res: Response) => {
     let [data, userData] = await Promise.all([
       Scheduler.upsert({
         id: schedulerId,
-        UserId: id,
+        UserId: user_id,
         minute,
         second,
         hour,
@@ -50,7 +51,7 @@ const addScheduler = async (req: Request, res: Response) => {
       }),
       User.findOne({
         where: {
-          id,
+          id: user_id,
         },
         include: [
           {
@@ -61,11 +62,11 @@ const addScheduler = async (req: Request, res: Response) => {
     ]);
     userData = JSON.parse(JSON.stringify(userData));
 
-    const jobIndex = jobs.findIndex((job) => job.id === parseInt(id, 10));
+    const jobIndex = jobs.findIndex((job) => job.id === parseInt(user_id, 10));
 
     if (jobIndex === -1) {
       jobs.push({
-        id: parseInt(id, 10),
+        id: parseInt(user_id, 10),
         initDate: new Date().toISOString(),
         job: new CronJob(
           `${second || "*"} ${minute || "*"} ${hour || "*"} ${
