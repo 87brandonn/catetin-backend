@@ -75,48 +75,59 @@ export const triggerCron = async (
   const template = handlebars.compile(source);
   const html = template(data);
 
-  pdf
-    .create(html, {
-      format: "A4",
-      base: `file:///template/`,
-      localUrlAccess: true,
-    })
-    .toBuffer(async (err, buffer) => {
-      const fileName = `financial-report/LaporanKeuangan${userId}-${data.storeName}-${data.from}-${data.to}.pdf`;
-      const file = bucket.file(fileName);
+  if (process.env.NODE_ENV !== "production") {
+    pdf
+      .create(html, {
+        format: "A4",
+      })
+      .toBuffer(async (err, buffer) => {
+        const fileName = `financial-report/LaporanKeuangan${userId}-${data.storeName}-${data.from}-${data.to}.pdf`;
+        const file = bucket.file(fileName);
 
-      await file.save(buffer, {
-        contentType: "application/pdf",
+        await file.save(buffer, {
+          contentType: "application/pdf",
+        });
+        await file.makePublic();
+
+        const publicUrl = format(
+          `https://storage.googleapis.com/${bucket.name}/${fileName}`
+        );
+
+        await transporter.sendMail({
+          ...mailData(email),
+          attachments: [
+            {
+              filename: fileName.replace("financial-report/", ""),
+              path: publicUrl,
+            },
+          ],
+        });
+
+        console.log(
+          `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
+          `${
+            (data.transaction &&
+              `Transaction involved : ${data.transaction}  `) ||
+            "No transaction on this period "
+          }`,
+          `Income : ${data.income}`,
+          `Outcome : ${data.outcome}`,
+          `Store Name : ${data.storeName}`,
+          `PDF Accessible on ${publicUrl}`
+        );
+
+        jobs[indexFound].initDate = to;
       });
-      await file.makePublic();
-
-      const publicUrl = format(
-        `https://storage.googleapis.com/${bucket.name}/${fileName}`
-      );
-
-      await transporter.sendMail({
-        ...mailData(email),
-        attachments: [
-          {
-            filename: fileName.replace("financial-report/", ""),
-            path: publicUrl,
-          },
-        ],
-      });
-
-      console.log(
-        `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
-        `${
-          (data.transaction &&
-            `Transaction involved : ${data.transaction}  `) ||
-          "No transaction on this period "
-        }`,
-        `Income : ${data.income}`,
-        `Outcome : ${data.outcome}`,
-        `Store Name : ${data.storeName}`,
-        `PDF Accessible on ${publicUrl}`
-      );
-
-      jobs[indexFound].initDate = to;
-    });
+  } else {
+    console.log(
+      `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
+      `${
+        (data.transaction && `Transaction involved : ${data.transaction}  `) ||
+        "No transaction on this period "
+      }`,
+      `Income : ${data.income}`,
+      `Outcome : ${data.outcome}`,
+      `Store Name : ${data.storeName}`
+    );
+  }
 };
