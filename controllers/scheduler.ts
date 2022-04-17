@@ -64,6 +64,9 @@ const addScheduler = async (req: Request, res: Response) => {
 
     const jobIndex = jobs.findIndex((job) => job.id === parseInt(user_id, 10));
 
+    console.log(jobs, "Current job");
+    console.log(jobIndex, "Job index when inserted.");
+
     if (jobIndex === -1) {
       jobs.push({
         id: parseInt(user_id, 10),
