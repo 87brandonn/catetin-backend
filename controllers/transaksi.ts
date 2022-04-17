@@ -450,7 +450,8 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                   WHERE
                     "iwt"."ItemId" = "Item"."id" AND 
                     "iwt"."type" = '3' AND 
-                    "iwt"."deleted" = false
+                    "iwt"."deleted" = false AND 
+                    "iwt"."UserId" = ${user_id}
                     ${dateQueryAsString} 
               )`),
               "total_nominal_transactions",
@@ -479,6 +480,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                   WHERE
                     "iwt"."ItemId" = "Item"."id" AND 
                     "iwt"."deleted" = false AND
+                    "iwt"."UserId" = ${user_id} AND
                     "iwt"."type" = '3' ${dateQueryAsString}
               )`),
               "total_amount_transactions",
