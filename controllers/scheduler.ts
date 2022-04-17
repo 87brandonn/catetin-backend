@@ -92,7 +92,6 @@ const addScheduler = async (req: Request, res: Response) => {
         ),
       });
     } else {
-      jobs[jobIndex].job.stop();
       jobs[jobIndex].job.setTime(
         new CronTime(
           `${second || "0"} ${minute || "*"} ${hour || "*"} ${
