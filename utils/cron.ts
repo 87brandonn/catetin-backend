@@ -19,8 +19,6 @@ export const triggerCron = async (
 ) => {
   const indexFound = jobs.findIndex((job) => job.id === userId);
 
-  console.log(jobs[indexFound], "Job Data");
-
   const from = jobs[indexFound].initDate;
   const to = new Date().toISOString();
   const query = {
