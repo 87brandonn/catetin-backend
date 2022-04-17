@@ -31,7 +31,7 @@ const initJobs = async () => {
         id: schedule.User.id,
         initDate: builtDate,
         job: new CronJob(
-          `${schedule.second || "*"} ${schedule.minute || "*"} ${
+          `${schedule.second || "0"} ${schedule.minute || "*"} ${
             schedule.hour || "*"
           } ${schedule.dayOfMonth || "*"} ${schedule.month || "*"} ${
             schedule.dayOfWeek || "*"

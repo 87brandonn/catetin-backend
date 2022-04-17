@@ -69,7 +69,7 @@ const addScheduler = async (req: Request, res: Response) => {
         id: parseInt(user_id, 10),
         initDate: new Date().toISOString(),
         job: new CronJob(
-          `${second || "*"} ${minute || "*"} ${hour || "*"} ${
+          `${second || "0"} ${minute || "*"} ${hour || "*"} ${
             dayOfMonth || "*"
           } ${month || "*"} ${dayOfWeek || "*"}`,
           async () => {
