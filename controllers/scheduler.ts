@@ -67,40 +67,33 @@ const addScheduler = async (req: Request, res: Response) => {
     console.log(jobs, "Current job");
     console.log(jobIndex, "Job index when inserted.");
 
-    if (jobIndex === -1) {
-      jobs.push({
-        id: parseInt(user_id, 10),
-        initDate: new Date().toISOString(),
-        job: new CronJob(
-          `${second || "0"} ${minute || "*"} ${hour || "*"} ${
-            dayOfMonth || "*"
-          } ${month || "*"} ${dayOfWeek || "*"}`,
-          async () => {
-            try {
-              await triggerCron(
-                userData.id,
-                userData.email,
-                userData.Profile?.storeName
-              );
-            } catch (err) {
-              console.error(err);
-            }
-          },
-          null,
-          true,
-          "Asia/Jakarta"
-        ),
-      });
-    } else {
-      jobs[jobIndex].job.setTime(
-        new CronTime(
-          `${second || "0"} ${minute || "*"} ${hour || "*"} ${
-            dayOfMonth || "*"
-          } ${month || "*"} ${dayOfWeek || "*"}`
-        )
-      );
-      jobs[jobIndex].job.start();
+    if (jobIndex !== -1) {
+      jobs.splice(jobIndex, 1);
     }
+
+    jobs.push({
+      id: parseInt(user_id, 10),
+      initDate: new Date().toISOString(),
+      job: new CronJob(
+        `${second || "0"} ${minute || "*"} ${hour || "*"} ${
+          dayOfMonth || "*"
+        } ${month || "*"} ${dayOfWeek || "*"}`,
+        async () => {
+          try {
+            await triggerCron(
+              userData.id,
+              userData.email,
+              userData.Profile?.storeName
+            );
+          } catch (err) {
+            console.error(err);
+          }
+        },
+        null,
+        true,
+        "Asia/Jakarta"
+      ),
+    });
 
     res.status(200).send({
       data,
