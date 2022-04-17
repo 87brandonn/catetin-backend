@@ -92,7 +92,7 @@ const addScheduler = async (req: Request, res: Response) => {
       jobs[jobIndex].job.stop();
       jobs[jobIndex].job.setTime(
         new CronTime(
-          `${second || "*"} ${minute || "*"} ${hour || "*"} ${
+          `${second || "0"} ${minute || "*"} ${hour || "*"} ${
             dayOfMonth || "*"
           } ${month || "*"} ${dayOfWeek || "*"}`
         )
