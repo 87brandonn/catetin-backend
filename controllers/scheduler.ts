@@ -65,7 +65,9 @@ const addScheduler = async (req: Request, res: Response) => {
     const jobIndex = jobs.findIndex((job) => job.id === parseInt(user_id, 10));
 
     if (jobIndex !== -1) {
-      setJobs(jobs.filter((job) => job.id !== parseInt(user_id, 10)));
+      const newJob = jobs.filter((job) => job.id !== parseInt(user_id, 10));
+      console.log(newJob, 'JOB AFTER FILTER')
+      setJobs(newJob);
     }
 
     console.log("BEFORE", jobs);
