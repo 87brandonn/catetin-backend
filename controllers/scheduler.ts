@@ -66,18 +66,17 @@ const addScheduler = async (req: Request, res: Response) => {
 
     if (jobIndex !== -1) {
       jobs.splice(jobIndex, 1);
-      console.log(jobs, "JOB AFTER FILTER");
     }
-
-    console.log("BEFORE", jobs);
 
     jobs.push({
       id: parseInt(user_id, 10),
       initDate: new Date().toISOString(),
       job: new CronJob(
-        `${second || "0"} ${minute || "*"} ${hour || "*"} ${
-          dayOfMonth || "*"
-        } ${month || "*"} ${dayOfWeek || "*"}`,
+        `${minute || (dayOfWeek ? "0" : "*")} ${
+          hour || (dayOfWeek ? "0" : "*")
+        } ${dayOfMonth || (month ? "1" : "*")} ${month || "*"} ${
+          dayOfWeek || (dayOfMonth ? "1" : "*")
+        }`,
         async () => {
           try {
             await triggerCron(
@@ -94,8 +93,6 @@ const addScheduler = async (req: Request, res: Response) => {
         "Asia/Jakarta"
       ),
     });
-
-    console.log("AFTER", jobs);
 
     res.status(200).send({
       data,
