@@ -1,6 +1,6 @@
 import { CronJob, CronTime } from "cron";
 import { Request, Response } from "express";
-import jobs from "../cron";
+import jobs, { setJobs } from "../cron";
 import model from "../models";
 import { triggerCron } from "../utils/cron";
 
@@ -68,7 +68,7 @@ const addScheduler = async (req: Request, res: Response) => {
     console.log(jobIndex, "Job index when inserted.");
 
     if (jobIndex !== -1) {
-      jobs.splice(jobIndex, 1);
+      setJobs(jobs.filter((job) => job.id !== parseInt(user_id, 10)));
     }
 
     console.log("BEFORE", jobs);

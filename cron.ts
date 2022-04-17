@@ -58,5 +58,9 @@ const initJobs = async () => {
   }
 };
 
+const setJobs = (data: { id: number; job: CronJob; initDate: string }[]) => {
+  jobs = data;
+};
+
 export default jobs;
-export { initJobs };
+export { initJobs, setJobs };
