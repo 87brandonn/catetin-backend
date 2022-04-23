@@ -23,7 +23,8 @@ app.listen(PORT, () => {
       console.log("Connection established, initiating jobs...");
       initJobs().catch((err) => {
         console.error(
-          "An error occured while initiating jobs... Terminating activity"
+          "An error occured while initiating jobs... Terminating activity",
+          err
         );
         return;
       });

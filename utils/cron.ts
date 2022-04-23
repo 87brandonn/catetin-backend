@@ -10,7 +10,7 @@ import jobs from "../cron";
 import { default as db, default as models } from "../models";
 import transporter, { mailData } from "../nodemailer";
 
-const { Transaction } = models;
+const { Transaction, Scheduler } = models;
 
 export const triggerCron = async (
   userId: number,
@@ -75,7 +75,7 @@ export const triggerCron = async (
   const template = handlebars.compile(source);
   const html = template(data);
 
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV === "production") {
     pdf
       .create(html, {
         format: "A4",
@@ -119,6 +119,17 @@ export const triggerCron = async (
         jobs[indexFound].initDate = to;
       });
   } else {
+    await Scheduler.update(
+      {
+        lastTrigger: to,
+      },
+      {
+        where: {
+          UserId: userId,
+        },
+      }
+    );
+    jobs[indexFound].initDate = to;
     console.log(
       `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
       `${

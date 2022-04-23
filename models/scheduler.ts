@@ -20,6 +20,10 @@ export default (sequelize: Sequelize, DataTypes: any) => {
       dayOfMonth: DataTypes.INTEGER,
       month: DataTypes.INTEGER,
       dayOfWeek: DataTypes.INTEGER,
+      lastTrigger: {
+        type: DataTypes.DATE,
+        defaultValue: new Date(),
+      },
     },
     {
       sequelize,

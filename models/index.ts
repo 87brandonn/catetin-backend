@@ -36,7 +36,15 @@ if (isProduction) {
     },
   });
 } else {
-  sequelize = new Sequelize({ ...databaseOptions, dialect: "postgres" });
+  // sequelize = new Sequelize({ ...databaseOptions, dialect: "postgres" });
+  sequelize = new Sequelize(DATABASE_URL as string, {
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
+  });
 }
 
 const db: any = {};
@@ -45,7 +53,7 @@ fs.readdirSync(__dirname)
     const returnFile =
       file.indexOf(".") !== 0 &&
       file !== filebasename &&
-      file.slice(-3) === `.${isProduction ? "js" : "ts"}`;
+      file.slice(-3) === `.js`;
     return returnFile;
   })
   .forEach((file) => {

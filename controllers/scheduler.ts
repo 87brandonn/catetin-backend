@@ -37,6 +37,7 @@ const addScheduler = async (req: Request, res: Response) => {
     dayOfWeek,
     id: schedulerId,
   } = req.body;
+  const currentDate = new Date();
   try {
     let [data, userData] = await Promise.all([
       Scheduler.upsert({
@@ -48,6 +49,7 @@ const addScheduler = async (req: Request, res: Response) => {
         dayOfMonth,
         month,
         dayOfWeek,
+        lastTrigger: currentDate,
       }),
       User.findOne({
         where: {
@@ -70,7 +72,7 @@ const addScheduler = async (req: Request, res: Response) => {
 
     jobs.push({
       id: parseInt(user_id, 10),
-      initDate: new Date().toISOString(),
+      initDate: currentDate.toISOString(),
       job: new CronJob(
         `${minute || (dayOfWeek ? "0" : "*")} ${
           hour || (dayOfWeek ? "0" : "*")

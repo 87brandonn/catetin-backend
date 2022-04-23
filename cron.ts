@@ -1,12 +1,12 @@
 import { CronJob } from "cron";
 import { ISchedulerUser } from "./interfaces/scheduler";
 import { default as models } from "./models";
+import moment from "moment";
 import { triggerCron } from "./utils/cron";
 
 const { Scheduler, User, Profile } = models;
 
 let jobs: { id: number; job: CronJob; initDate: string }[] = [];
-const builtDate = new Date().toISOString();
 
 const initJobs = async () => {
   try {
@@ -29,15 +29,13 @@ const initJobs = async () => {
     data.forEach((schedule) => {
       jobs.push({
         id: schedule.User.id,
-        initDate: builtDate,
+        initDate: moment(schedule.lastTrigger).toISOString(),
         job: new CronJob(
-          `${
-            schedule.minute || (schedule.dayOfWeek ? "0" : "*")
-          } ${schedule.hour || (schedule.dayOfWeek ? "0" : "*")} ${
-            schedule.dayOfMonth || (schedule.month ? "1" : "*")
-          } ${schedule.month || "*"} ${
-            schedule.dayOfWeek || (schedule.dayOfMonth ? "1" : "*")
-          }`,
+          `${schedule.minute || (schedule.dayOfWeek ? "0" : "*")} ${
+            schedule.hour || (schedule.dayOfWeek ? "0" : "*")
+          } ${schedule.dayOfMonth || (schedule.month ? "1" : "*")} ${
+            schedule.month || "*"
+          } ${schedule.dayOfWeek || (schedule.dayOfMonth ? "1" : "*")}`,
           async () => {
             try {
               await triggerCron(

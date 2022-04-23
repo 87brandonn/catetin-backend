@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "NODE_ENV=production nodemon index.ts",
-    "dev": "NODE_ENV=development nodemon index.ts",
-    "build": "tsc --project ./",
+    "start": "yarn build && NODE_ENV=production node build/index.js",
+    "dev": "npx tsc-watch --onSuccess \"node ./build/index.js\"",
+    "build": "npx tsc",
     "build-assets": "postcss style.css -o template/financial-report.css"
   },
   "repository": {
@@ -55,6 +55,7 @@
     "@types/html-pdf": "^3.0.0",
     "@types/jsonwebtoken": "^8.5.8",
     "@types/node": "^17.0.17",
+    "concurrently": "^7.1.0",
     "nodemon": "^2.0.15",
     "ts-node": "^10.5.0",
     "typescript": "^4.5.5"

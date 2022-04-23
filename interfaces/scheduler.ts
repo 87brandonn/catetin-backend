@@ -11,6 +11,7 @@ export default interface IScheduler {
   dayOfMonth: number;
   month: number;
   dayOfWeek: number;
+  lastTrigger: Date;
 }
 
 export type ISchedulerUser = IScheduler & {
