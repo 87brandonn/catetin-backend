@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "yarn build && NODE_ENV=production node build/index.js",
+    "start": "NODE_ENV=production node build/index.js",
     "dev": "tsc && concurrently \"tsc -w\" \"nodemon build/index.js\"",
     "build": "npx tsc",
     "build-assets": "postcss style.css -o template/financial-report.css"
