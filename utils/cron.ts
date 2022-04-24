@@ -82,28 +82,24 @@ export const triggerCron = async (
     storeName: storeName || "Catetin Toko",
     from: moment(from).format("DD MMMM YYYY HH:mm"),
     to: moment(to).format("DD MMMM YYYY HH:mm"),
-    item_export:
-      Number(
-        transaction?.find((eachTransaction) => eachTransaction.type === "3")
-          ?.total_amount
-      )?.toLocaleString("id-ID") || 0,
-    additional_income:
-      Number(
-        transaction?.find((eachTransaction) => eachTransaction.type === "2")
-          ?.total_amount
-      )?.toLocaleString("id-ID") || 0,
-    item_import:
-      Number(
-        transaction?.find((eachTransaction) => eachTransaction.type === "4")
-          ?.total_amount
-      )?.toLocaleString("id-ID") || 0,
-    additional_outcome:
-      Number(
-        transaction?.find((eachTransaction) => eachTransaction.type === "1")
-          ?.total_amount
-      )?.toLocaleString("id-ID") || 0,
-    income: Number(income).toLocaleString("id-ID") || 0,
-    outcome: Number(outcome).toLocaleString("id-ID") || 0,
+    item_export: Number(
+      transaction?.find((eachTransaction) => eachTransaction.type === "3")
+        ?.total_amount || 0
+    )?.toLocaleString("id-ID"),
+    additional_income: Number(
+      transaction?.find((eachTransaction) => eachTransaction.type === "2")
+        ?.total_amount || 0
+    )?.toLocaleString("id-ID"),
+    item_import: Number(
+      transaction?.find((eachTransaction) => eachTransaction.type === "4")
+        ?.total_amount || 0
+    )?.toLocaleString("id-ID"),
+    additional_outcome: Number(
+      transaction?.find((eachTransaction) => eachTransaction.type === "1")
+        ?.total_amount || 0
+    )?.toLocaleString("id-ID"),
+    income: Number(income || 0).toLocaleString("id-ID"),
+    outcome: Number(outcome || 0).toLocaleString("id-ID"),
     impression,
   };
 
