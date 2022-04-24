@@ -72,14 +72,16 @@ export const triggerCron = async (
   outcome = JSON.parse(JSON.stringify(outcome));
 
   const impression = {
-    value: Math.abs((income || 0) - (outcome || 0)),
+    value: Number(Math.abs((income || 0) - (outcome || 0))).toLocaleString(
+      "id-ID"
+    ),
     profit: (income || 0) > (outcome || 0) ? true : false,
   };
 
   const data = {
-    storeName: storeName || "TokoCatetin",
-    from: moment(from).format("DD MMMM YYYY"),
-    to: moment(to).format("DD MMMM YYYY"),
+    storeName: storeName || "Catetin Toko",
+    from: moment(from).format("DD MMMM YYYY HH:mm"),
+    to: moment(to).format("DD MMMM YYYY HH:mm"),
     item_export:
       Number(
         transaction?.find((eachTransaction) => eachTransaction.type === "3")
@@ -100,8 +102,8 @@ export const triggerCron = async (
         transaction?.find((eachTransaction) => eachTransaction.type === "1")
           ?.total_amount
       )?.toLocaleString("id-ID") || 0,
-    income: income || 0,
-    outcome: outcome || 0,
+    income: Number(income).toLocaleString("id-ID") || 0,
+    outcome: Number(outcome).toLocaleString("id-ID") || 0,
     impression,
   };
 
