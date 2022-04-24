@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from "express";
 import moment from "moment";
 import { Op } from "sequelize";
 import { default as db, default as model } from "../models";
-import { groupBy } from "./../utils/index";
 
 const { Transaction, ItemTransaction, Item } = model;
 
@@ -248,13 +247,52 @@ const getTransaksi = async (
   next: NextFunction
 ) => {
   let user_id = res.locals.jwt.user_id;
-  const { tipe_transaksi } = req.query;
+  const { search, items, nominal, start_date, end_date, type } = req.query;
 
   const additional = {};
 
-  if (tipe_transaksi) {
+  if (search) {
     Object.assign(additional, {
-      type: tipe_transaksi,
+      [Op.or]: [{ title: search }, { notes: search }],
+    });
+  }
+  if (items) {
+    Object.assign(additional, {
+      "$Items.id$": {
+        [Op.in]: items,
+      },
+    });
+  }
+  if (nominal) {
+    Object.assign(additional, {
+      nominal: {
+        [Op.between]: nominal,
+      },
+    });
+  }
+  if (start_date || end_date) {
+    Object.assign(additional, {
+      transaction_date: {
+        [Op.between]: [
+          moment(start_date as string)
+            .startOf("day")
+            .toDate(),
+          end_date
+            ? moment(end_date as string)
+                .endOf("day")
+                .toDate()
+            : moment(start_date as string)
+                .endOf("day")
+                .toDate(),
+        ],
+      },
+    });
+  }
+  if (type) {
+    Object.assign(additional, {
+      type: {
+        [Op.in]: type,
+      },
     });
   }
 
