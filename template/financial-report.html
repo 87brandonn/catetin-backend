@@ -566,11 +566,11 @@ Ensure the default browser behavior of the `hidden` attribute.
         <div class="mt-4 text-2xl mb-1">Pendapatan</div>
         <div class="pl-4 flex justify-between mb-1">
           <div>Penjualan Barang</div>
-          <div>Rp 50.000</div>
+          <div>Rp {{ item_export }}</div>
         </div>
         <div class="pl-4 flex justify-between mb-1">
           <div>Pemasukan lainnya</div>
-          <div>Rp 100.000</div>
+          <div>Rp {{ additional_income }}</div>
         </div>
         <div class="flex justify-between">
           <div class="font-semibold text-base">Total Pendapatan Kotor</div>
@@ -582,11 +582,11 @@ Ensure the default browser behavior of the `hidden` attribute.
         <div class="mt-4 text-2xl mb-1">Beban</div>
         <div class="pl-4 flex justify-between mb-1">
           <div>Pembelian Barang</div>
-          <div>Rp 20.000</div>
+          <div>{{ item_import }}</div>
         </div>
         <div class="pl-4 flex justify-between mb-1">
           <div>Pengeluaran lainnya</div>
-          <div>Rp 10.000</div>
+          <div>{{ additional_outcome }}</div>
         </div>
         <div class="flex justify-between">
           <div class="font-semibold text-base">Total Beban</div>
@@ -596,8 +596,12 @@ Ensure the default browser behavior of the `hidden` attribute.
 
       <div class="mb-4">
         <div class="flex justify-between">
+          {{#if impression.profit}}
           <div class="font-semibold text-2xl">Laba Bersih</div>
-          <div class="font-bold">Rp 125.000</div>
+          {{else}}
+          <div class="font-semibold text-2xl">Jumlah Kerugian</div>
+          {{/if}}
+          <div class="font-bold">Rp {{ impression.value }}</div>
         </div>
       </div>
 

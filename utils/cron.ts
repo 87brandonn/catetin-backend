@@ -1,3 +1,4 @@
+import { ICatetinTransaksi } from "./../interfaces/transaksi";
 import { getScheduleType } from "./index";
 import { ISchedulerUser } from "./../interfaces/scheduler";
 import fs from "fs";
@@ -37,7 +38,11 @@ export const triggerCron = async (
     },
   };
 
-  let [transaction, income, outcome] = await Promise.all([
+  let [transaction, income, outcome]: [
+    transaction: ICatetinTransaksi[],
+    income: number | undefined,
+    outcome: number | undefined
+  ] = await Promise.all([
     Transaction.findAll({
       where: {
         ...query,
@@ -66,13 +71,26 @@ export const triggerCron = async (
   income = JSON.parse(JSON.stringify(income));
   outcome = JSON.parse(JSON.stringify(outcome));
 
+  const impression = {
+    value: Math.abs((income || 0) - (outcome || 0)),
+    profit: (income || 0) > (outcome || 0) ? true : false,
+  };
+
   const data = {
     storeName: storeName || "TokoCatetin",
     from: moment(from).format("DD MMMM YYYY"),
     to: moment(to).format("DD MMMM YYYY"),
-    transaction,
+    item_export:
+      transaction?.find((eachTransaction) => eachTransaction.type === "3") || 0,
+    additional_income:
+      transaction?.find((eachTransaction) => eachTransaction.type === "2") || 0,
+    item_import:
+      transaction?.find((eachTransaction) => eachTransaction.type === "4") || 0,
+    additional_outcome:
+      transaction?.find((eachTransaction) => eachTransaction.type === "1") || 0,
     income: income || 0,
     outcome: outcome || 0,
+    impression,
   };
 
   const __dirname = path.resolve();
@@ -92,62 +110,51 @@ export const triggerCron = async (
     }
   );
 
-  // if (process.env.NODE_ENV === "production") {
-  //   pdf
-  //     .create(html, {
-  //       format: "A4",
-  //     })
-  //     .toBuffer(async (err, buffer) => {
-  //       const fileName = `financial-report/LaporanKeuangan${userId}-${data.storeName}-${data.from}-${data.to}.pdf`;
-  //       const file = bucket.file(fileName);
+  if (process.env.NODE_ENV === "production") {
+    pdf
+      .create(html, {
+        format: "A4",
+      })
+      .toBuffer(async (err: any, buffer) => {
+        if (err) {
+          console.error(
+            "An error occured while generating financial report PDF",
+            err
+          );
+          throw new Error(err);
+        }
+        const fileName = `financial-report/LaporanKeuangan${userId}-${data.storeName}-${data.from}-${data.to}.pdf`;
+        const file = bucket.file(fileName);
 
-  //       await file.save(buffer, {
-  //         contentType: "application/pdf",
-  //       });
-  //       await file.makePublic();
+        await file.save(buffer, {
+          contentType: "application/pdf",
+        });
+        await file.makePublic();
 
-  //       const publicUrl = format(
-  //         `https://storage.googleapis.com/${bucket.name}/${fileName}`
-  //       );
+        const publicUrl = format(
+          `https://storage.googleapis.com/${bucket.name}/${fileName}`
+        );
 
-  //       await transporter.sendMail({
-  //         ...mailData(email),
-  //         attachments: [
-  //           {
-  //             filename: fileName.replace("financial-report/", ""),
-  //             path: publicUrl,
-  //           },
-  //         ],
-  //       });
+        await transporter.sendMail({
+          ...mailData(email),
+          attachments: [
+            {
+              filename: fileName.replace("financial-report/", ""),
+              path: publicUrl,
+            },
+          ],
+        });
 
-  //       console.log(
-  //         `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
-  //         `${
-  //           (data.transaction &&
-  //             `Transaction involved : ${data.transaction}  `) ||
-  //           "No transaction on this period "
-  //         }`,
-  //         `Income : ${data.income}`,
-  //         `Outcome : ${data.outcome}`,
-  //         `Store Name : ${data.storeName}`,
-  //         `PDF Accessible on ${publicUrl}`
-  //       );
-
-  //       jobs[indexFound].initDate = to;
-  //     });
-  // }
-  // else {
-  jobs[indexFound].initDate = to;
-  console.log(
-    `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
-    `${
-      (data.transaction &&
-        `Transaction involved: ${JSON.stringify(data.transaction)}  `) ||
-      "No transaction on this period "
-    }`,
-    `Income : ${data.income}`,
-    `Outcome : ${data.outcome}`,
-    `Store Name : ${data.storeName}`
-  );
-  // }
+        console.log(`Financial report has been sent to user ${email}`);
+        jobs[indexFound].initDate = to;
+      });
+  } else {
+    jobs[indexFound].initDate = to;
+    console.log(
+      `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
+      `Income : ${data.income}`,
+      `Outcome : ${data.outcome}`,
+      `Store Name : ${data.storeName}`
+    );
+  }
 };
