@@ -85,6 +85,7 @@ const addScheduler = async (req: Request, res: Response) => {
     );
 
     if (jobIndex !== -1) {
+      jobs[jobIndex].job.stop();
       jobs.splice(jobIndex, 1, {
         id: parseInt(user_id, 10),
         initDate: currentDate.toISOString(),
@@ -118,6 +119,7 @@ const addScheduler = async (req: Request, res: Response) => {
           "Asia/Jakarta"
         ),
       });
+      jobs[jobIndex].job.start()
     } else {
       jobs.push({
         id: parseInt(user_id, 10),
