@@ -18,9 +18,10 @@ export const triggerCron = async (
   storeName: string
 ) => {
   const indexFound = jobs.findIndex((job) => job.id === userId);
+  const currentDate = new Date();
 
   const from = jobs[indexFound].initDate;
-  const to = new Date().toISOString();
+  const to = currentDate.toISOString();
   const query = {
     UserId: userId,
     transaction_date: {
@@ -75,70 +76,72 @@ export const triggerCron = async (
   const template = handlebars.compile(source);
   const html = template(data);
 
-  if (process.env.NODE_ENV === "production") {
-    pdf
-      .create(html, {
-        format: "A4",
-      })
-      .toBuffer(async (err, buffer) => {
-        const fileName = `financial-report/LaporanKeuangan${userId}-${data.storeName}-${data.from}-${data.to}.pdf`;
-        const file = bucket.file(fileName);
-
-        await file.save(buffer, {
-          contentType: "application/pdf",
-        });
-        await file.makePublic();
-
-        const publicUrl = format(
-          `https://storage.googleapis.com/${bucket.name}/${fileName}`
-        );
-
-        await transporter.sendMail({
-          ...mailData(email),
-          attachments: [
-            {
-              filename: fileName.replace("financial-report/", ""),
-              path: publicUrl,
-            },
-          ],
-        });
-
-        console.log(
-          `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
-          `${
-            (data.transaction &&
-              `Transaction involved : ${data.transaction}  `) ||
-            "No transaction on this period "
-          }`,
-          `Income : ${data.income}`,
-          `Outcome : ${data.outcome}`,
-          `Store Name : ${data.storeName}`,
-          `PDF Accessible on ${publicUrl}`
-        );
-
-        jobs[indexFound].initDate = to;
-      });
-  } else {
-    await Scheduler.update(
-      {
-        lastTrigger: to,
+  await Scheduler.update(
+    {
+      lastTrigger: currentDate,
+    },
+    {
+      where: {
+        UserId: userId,
       },
-      {
-        where: {
-          UserId: userId,
-        },
-      }
-    );
-    jobs[indexFound].initDate = to;
-    console.log(
-      `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
-      `${
-        (data.transaction && `Transaction involved : ${data.transaction}  `) ||
-        "No transaction on this period "
-      }`,
-      `Income : ${data.income}`,
-      `Outcome : ${data.outcome}`,
-      `Store Name : ${data.storeName}`
-    );
-  }
+    }
+  );
+
+  // if (process.env.NODE_ENV === "production") {
+  //   pdf
+  //     .create(html, {
+  //       format: "A4",
+  //     })
+  //     .toBuffer(async (err, buffer) => {
+  //       const fileName = `financial-report/LaporanKeuangan${userId}-${data.storeName}-${data.from}-${data.to}.pdf`;
+  //       const file = bucket.file(fileName);
+
+  //       await file.save(buffer, {
+  //         contentType: "application/pdf",
+  //       });
+  //       await file.makePublic();
+
+  //       const publicUrl = format(
+  //         `https://storage.googleapis.com/${bucket.name}/${fileName}`
+  //       );
+
+  //       await transporter.sendMail({
+  //         ...mailData(email),
+  //         attachments: [
+  //           {
+  //             filename: fileName.replace("financial-report/", ""),
+  //             path: publicUrl,
+  //           },
+  //         ],
+  //       });
+
+  //       console.log(
+  //         `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
+  //         `${
+  //           (data.transaction &&
+  //             `Transaction involved : ${data.transaction}  `) ||
+  //           "No transaction on this period "
+  //         }`,
+  //         `Income : ${data.income}`,
+  //         `Outcome : ${data.outcome}`,
+  //         `Store Name : ${data.storeName}`,
+  //         `PDF Accessible on ${publicUrl}`
+  //       );
+
+  //       jobs[indexFound].initDate = to;
+  //     });
+  // }
+  // else {
+  jobs[indexFound].initDate = to;
+  console.log(
+    `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
+    `${
+      (data.transaction && `Transaction involved : ${data.transaction}  `) ||
+      "No transaction on this period "
+    }`,
+    `Income : ${data.income}`,
+    `Outcome : ${data.outcome}`,
+    `Store Name : ${data.storeName}`
+  );
+  // }
 };

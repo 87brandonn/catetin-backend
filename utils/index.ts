@@ -46,3 +46,11 @@ export const getOrderQuery = (sort: string) => {
   })}`;
   return arrayOrder;
 };
+
+export const getCronTime = (
+  v: number,
+  value: number,
+  defaultValue: string
+): string => {
+  return (v !== null && value.toString()) || defaultValue;
+};

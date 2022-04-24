@@ -3,6 +3,7 @@ import { ISchedulerUser } from "./interfaces/scheduler";
 import { default as models } from "./models";
 import moment from "moment";
 import { triggerCron } from "./utils/cron";
+import { getCronTime } from "./utils";
 
 const { Scheduler, User, Profile } = models;
 
@@ -31,11 +32,19 @@ const initJobs = async () => {
         id: schedule.User.id,
         initDate: moment(schedule.lastTrigger).toISOString(),
         job: new CronJob(
-          `${schedule.minute || (schedule.dayOfWeek ? "0" : "*")} ${
-            schedule.hour || (schedule.dayOfWeek ? "0" : "*")
-          } ${schedule.dayOfMonth || (schedule.month ? "1" : "*")} ${
-            schedule.month || "*"
-          } ${schedule.dayOfWeek || (schedule.dayOfMonth ? "1" : "*")}`,
+          `${getCronTime(schedule.minute, schedule.minute, "0")} ${getCronTime(
+            schedule.hour,
+            schedule.hour,
+            "0"
+          )} ${getCronTime(
+            schedule.dayOfMonth,
+            schedule.dayOfMonth,
+            getCronTime(schedule.month, 1, "*")
+          )} ${getCronTime(schedule.month, schedule.month, "*")} ${getCronTime(
+            schedule.dayOfWeek,
+            schedule.dayOfWeek,
+            "*"
+          )}`,
           async () => {
             try {
               await triggerCron(
