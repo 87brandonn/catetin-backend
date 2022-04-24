@@ -1,3 +1,5 @@
+import { getScheduleType } from "./index";
+import { ISchedulerUser } from "./../interfaces/scheduler";
 import fs from "fs";
 import handlebars from "handlebars";
 import pdf from "html-pdf";
@@ -15,12 +17,17 @@ const { Transaction, Scheduler } = models;
 export const triggerCron = async (
   userId: number,
   email: string,
-  storeName: string
+  storeName: string,
+  schedule: ISchedulerUser
 ) => {
   const indexFound = jobs.findIndex((job) => job.id === userId);
   const currentDate = new Date();
 
-  const from = jobs[indexFound].initDate;
+  const previous = getScheduleType(schedule);
+
+  const from = moment(jobs[indexFound].initDate)
+    .subtract(1, previous)
+    .toISOString();
   const to = currentDate.toISOString();
   const query = {
     UserId: userId,

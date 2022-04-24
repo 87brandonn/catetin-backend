@@ -1,3 +1,5 @@
+import { ISchedulerUser } from "../interfaces/scheduler";
+
 export const serializePayloadtoQuery = (
   object: Record<string, any>,
   whereClause = false
@@ -53,4 +55,16 @@ export const getCronTime = (
   defaultValue: string
 ): string => {
   return (v !== null && value.toString()) || defaultValue;
+};
+
+export const getScheduleType = (schedule: ISchedulerUser) => {
+  if (schedule.month !== null) {
+    return "years";
+  } else if (schedule.dayOfMonth) {
+    return "months";
+  } else if (schedule.dayOfWeek !== null) {
+    return "weeks";
+  } else if (schedule.hour !== null && schedule.hour >= 0) {
+    return "days";
+  }
 };

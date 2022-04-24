@@ -108,7 +108,8 @@ const addScheduler = async (req: Request, res: Response) => {
               await triggerCron(
                 userData.id,
                 userData.email,
-                userData.Profile?.storeName
+                userData.Profile?.storeName,
+                schedule
               );
             } catch (err) {
               console.error(err);
@@ -119,7 +120,7 @@ const addScheduler = async (req: Request, res: Response) => {
           "Asia/Jakarta"
         ),
       });
-      jobs[jobIndex].job.start()
+      jobs[jobIndex].job.start();
     } else {
       jobs.push({
         id: parseInt(user_id, 10),
@@ -143,7 +144,8 @@ const addScheduler = async (req: Request, res: Response) => {
               await triggerCron(
                 userData.id,
                 userData.email,
-                userData.Profile?.storeName
+                userData.Profile?.storeName,
+                schedule
               );
             } catch (err) {
               console.error(err);

@@ -50,7 +50,8 @@ const initJobs = async () => {
               await triggerCron(
                 schedule.User.id,
                 schedule.User.email,
-                schedule.User.Profile?.storeName
+                schedule.User.Profile?.storeName,
+                schedule
               );
             } catch (err) {
               console.error(err);
