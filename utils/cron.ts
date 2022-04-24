@@ -142,7 +142,7 @@ export const triggerCron = async (
     `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
     `${
       (data.transaction &&
-        `Transaction involved : ${JSON.stringify(data.transaction)}  `) ||
+        `Transaction involved: ${JSON.stringify(data.transaction)}  `) ||
       "No transaction on this period "
     }`,
     `Income : ${data.income}`,
