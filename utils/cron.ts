@@ -25,7 +25,7 @@ export const triggerCron = async (
 
   const previous = getScheduleType(schedule);
 
-  const from = moment(jobs[indexFound].initDate)
+  const from = moment(currentDate)
     .subtract(1, previous)
     .toISOString();
   const to = currentDate.toISOString();
