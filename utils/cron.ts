@@ -4,7 +4,7 @@ import { ISchedulerUser } from "./../interfaces/scheduler";
 import fs from "fs";
 import handlebars from "handlebars";
 import pdf from "html-pdf";
-import moment from "moment";
+import moment from "moment-timezone";
 import path from "path";
 import { Op } from "sequelize";
 import { format } from "util";
@@ -80,8 +80,11 @@ export const triggerCron = async (
 
   const data = {
     storeName: storeName || "Catetin Toko",
-    from: moment(from).format("DD MMMM YYYY HH:mm"),
-    to: moment(to).format("DD MMMM YYYY HH:mm"),
+    from: moment(from)
+      .locale("id")
+      .tz("Asia/Jakarta")
+      .format("DD MMMM YYYY HH:mm"),
+    to: moment(to).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY HH:mm"),
     item_export: Number(
       transaction?.find((eachTransaction) => eachTransaction.type === "3")
         ?.total_amount || 0
