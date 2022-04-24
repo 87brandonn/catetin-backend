@@ -253,7 +253,18 @@ const getTransaksi = async (
 
   if (search) {
     Object.assign(additional, {
-      [Op.or]: [{ title: search }, { notes: search }],
+      [Op.or]: [
+        {
+          title: {
+            [Op.like]: `%${search}%`,
+          },
+        },
+        {
+          notes: {
+            [Op.like]: `%${search}%`,
+          },
+        },
+      ],
     });
   }
   if (items) {
