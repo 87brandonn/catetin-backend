@@ -39,7 +39,7 @@ export const triggerCron = async (
   };
 
   let [transaction, income, outcome]: [
-    transaction: ICatetinTransaksi[],
+    transaction: { type: string; total_amount: string }[],
     income: number | undefined,
     outcome: number | undefined
   ] = await Promise.all([
@@ -81,13 +81,25 @@ export const triggerCron = async (
     from: moment(from).format("DD MMMM YYYY"),
     to: moment(to).format("DD MMMM YYYY"),
     item_export:
-      transaction?.find((eachTransaction) => eachTransaction.type === "3") || 0,
+      Number(
+        transaction?.find((eachTransaction) => eachTransaction.type === "3")
+          ?.total_amount
+      )?.toLocaleString("id-ID") || 0,
     additional_income:
-      transaction?.find((eachTransaction) => eachTransaction.type === "2") || 0,
+      Number(
+        transaction?.find((eachTransaction) => eachTransaction.type === "2")
+          ?.total_amount
+      )?.toLocaleString("id-ID") || 0,
     item_import:
-      transaction?.find((eachTransaction) => eachTransaction.type === "4") || 0,
+      Number(
+        transaction?.find((eachTransaction) => eachTransaction.type === "4")
+          ?.total_amount
+      )?.toLocaleString("id-ID") || 0,
     additional_outcome:
-      transaction?.find((eachTransaction) => eachTransaction.type === "1") || 0,
+      Number(
+        transaction?.find((eachTransaction) => eachTransaction.type === "1")
+          ?.total_amount
+      )?.toLocaleString("id-ID") || 0,
     income: income || 0,
     outcome: outcome || 0,
     impression,
