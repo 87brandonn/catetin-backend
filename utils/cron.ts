@@ -25,9 +25,7 @@ export const triggerCron = async (
 
   const previous = getScheduleType(schedule);
 
-  const from = moment(currentDate)
-    .subtract(1, previous)
-    .toISOString();
+  const from = moment(currentDate).subtract(1, previous).toISOString();
   const to = currentDate.toISOString();
   const query = {
     UserId: userId,
@@ -143,7 +141,8 @@ export const triggerCron = async (
   console.log(
     `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
     `${
-      (data.transaction && `Transaction involved : ${data.transaction}  `) ||
+      (data.transaction &&
+        `Transaction involved : ${JSON.stringify(data.transaction)}  `) ||
       "No transaction on this period "
     }`,
     `Income : ${data.income}`,
