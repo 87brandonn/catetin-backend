@@ -250,6 +250,7 @@ const getTransaksi = async (
   const { search, items, nominal, start_date, end_date, type } = req.query;
 
   const additional = {};
+  const includeQuery = {};
 
   if (search) {
     Object.assign(additional, {
@@ -272,6 +273,9 @@ const getTransaksi = async (
       "$Items.id$": {
         [Op.in]: items,
       },
+    });
+    Object.assign(includeQuery, {
+      required: true,
     });
   }
   if (nominal) {
@@ -316,6 +320,7 @@ const getTransaksi = async (
       },
       include: {
         model: Item,
+        ...includeQuery,
       },
       order: [["updatedAt", "DESC"]],
     });
