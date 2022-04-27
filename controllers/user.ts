@@ -312,6 +312,7 @@ export const generateVerifyNumber = async (req: Request, res: Response) => {
       message: "Succesfully send verification email number",
     });
   } catch (err) {
+    console.error("Failed to generate verify number", err);
     res.status(500).send({
       message: "An error occured while generating verify number",
       err,
@@ -370,6 +371,7 @@ export const verifyEmailNumber = async (req: Request, res: Response) => {
       message: "Succesfully authenticated",
     });
   } catch (err) {
+    console.error("Failed to verify number", err);
     res.status(500).send({
       message: "An error occured while verifying number",
       err,
