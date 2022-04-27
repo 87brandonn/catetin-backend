@@ -14,7 +14,7 @@ app.use(bodyParser.json());
 app.use("/", routes);
 
 app.listen(PORT, () => {
-  console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
+  console.log(`⚡️[server]: Server start running at https://localhost:${PORT}`);
   db.sequelize
     .sync({
       alter:

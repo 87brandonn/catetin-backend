@@ -5,9 +5,11 @@ import { Op } from "sequelize";
 import logging from "../config/logging";
 import signJWT from "../function/signJWT";
 import model from "../models";
+import moment from "moment";
+import transporter from "../nodemailer";
 
 const NAMESPACE = "User";
-const { User, Profile } = model;
+const { User, Profile, VerificationEmailNumber } = model;
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
   logging.info(NAMESPACE, "Token validated, user authorized.");
@@ -39,6 +41,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
       password: hash,
       provider: "catetin",
       email,
+      verified: false,
     });
 
     signJWT(id, (_error, token) => {
@@ -133,6 +136,7 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
         provider: "google",
         username: crypto.randomBytes(16).toString("hex"),
         password: crypto.randomBytes(16).toString("hex"),
+        verified: true,
       });
       await Profile.create({
         displayName: name,
@@ -186,6 +190,7 @@ const loginFacebook = async (
         provider: "facebook",
         username: crypto.randomBytes(16).toString("hex"),
         password: crypto.randomBytes(16).toString("hex"),
+        verified: true,
       });
       await Profile.create({
         displayName: name,
@@ -274,6 +279,104 @@ const updateProfile = async (
   }
 };
 
+export const generateVerifyNumber = async (req: Request, res: Response) => {
+  try {
+    const user_id = res.locals.jwt.user_id;
+    const promises = [];
+    promises.push(
+      VerificationEmailNumber.create({
+        unique_number: Math.floor(1000 + Math.random() * 9000),
+        active: true,
+        UserId: user_id,
+      })
+    );
+    promises.push(
+      User.findOne({
+        where: {
+          id: user_id,
+        },
+      })
+    );
+    let [verificationEmailNumberData, userData] = await Promise.all(promises);
+    verificationEmailNumberData = JSON.parse(
+      JSON.stringify(verificationEmailNumberData)
+    );
+    userData = JSON.parse(JSON.stringify(userData));
+    await transporter.sendMail({
+      from: "brandonpardede25@gmail.com",
+      to: userData.email,
+      subject: "Email Verification Number",
+      html: `${verificationEmailNumberData.unique_number} is your 6 digit verification number for another 30 minutes. Thank you for using Catetin.`,
+    });
+    res.status(200).send({
+      message: "Succesfully send verification email number",
+    });
+  } catch (err) {
+    res.status(500).send({
+      message: "An error occured while generating verify number",
+      err,
+    });
+  }
+};
+
+export const verifyEmailNumber = async (req: Request, res: Response) => {
+  const user_id = res.locals.jwt.user_id;
+  const { number } = req.body;
+  try {
+    const data = await VerificationEmailNumber.findOne({
+      where: {
+        unique_number: number,
+        active: true,
+        expirationDate: {
+          [Op.gte]: moment().toDate(),
+        },
+        UserId: user_id,
+      },
+    });
+    if (!data) {
+      res.status(403).send({
+        message: "ID have been revoked or might not exist. Please try again",
+      });
+      return;
+    }
+    const promises = [];
+    promises.push(
+      VerificationEmailNumber.update(
+        {
+          active: false,
+        },
+        {
+          where: {
+            id: data.id,
+          },
+        }
+      )
+    );
+    promises.push(
+      User.update(
+        {
+          verified: true,
+        },
+        {
+          where: {
+            id: user_id,
+          },
+        }
+      )
+    );
+    const promisesData = await Promise.all(promises);
+    res.send(200).send({
+      data: promisesData,
+      message: "Succesfully authenticated",
+    });
+  } catch (err) {
+    res.status(500).send({
+      message: "An error occured while verifying number",
+      err,
+    });
+  }
+};
+
 export const updateProfilePassword = async (req: Request, res: Response) => {
   let { current_password, new_password } = req.body;
   try {
@@ -320,6 +423,8 @@ export default {
   register,
   loginFacebook,
   login,
+  generateVerifyNumber,
+  verifyEmailNumber,
   loginGmail,
   updateProfile,
   getProfile,

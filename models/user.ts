@@ -30,6 +30,10 @@ export default (sequelize: Sequelize, DataTypes: any) => {
           },
         },
       },
+      verified: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
     },
     {
       sequelize,
