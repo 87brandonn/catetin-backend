@@ -161,6 +161,50 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const loginFacebook = async (req: Request, res: Response, next: NextFunction) => {
+  let { email } = req.body;
+
+  try {
+    let signedId: number;
+    const users = await User.findOne({
+      where: {
+        email,
+        provider: "facebook",
+      },
+    });
+    if (!users) {
+      const { id } = await User.create({
+        email,
+        provider: "facebook",
+        username: crypto.randomBytes(16).toString("hex"),
+        password: crypto.randomBytes(16).toString("hex"),
+      });
+      signedId = id;
+    } else {
+      signedId = users.dataValues.id;
+    }
+    signJWT(signedId, (_error, token) => {
+      if (_error) {
+        return res.status(401).json({
+          message: "Unable to Sign JWT",
+          error: _error,
+        });
+      } else if (token) {
+        return res.status(200).json({
+          message: "Auth Successful",
+          token,
+          user: signedId,
+        });
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err.message,
+      err,
+    });
+  }
+};
+
 const getProfile = async (req: Request, res: Response, next: NextFunction) => {
   let user_id = res.locals.jwt.user_id;
 

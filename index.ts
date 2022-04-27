@@ -17,7 +17,8 @@ app.listen(PORT, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
   db.sequelize
     .sync({
-      alter: true,
+      alter:
+        true /* DANGEROUS OPERATION, please do not modify it unless you asks for permissions first */,
     })
     .then(() => {
       console.log("Connection established, initiating jobs...");
