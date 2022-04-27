@@ -117,7 +117,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
-  let { email } = req.body;
+  let { email, name } = req.body;
 
   try {
     let signedId: number;
@@ -133,6 +133,10 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
         provider: "google",
         username: crypto.randomBytes(16).toString("hex"),
         password: crypto.randomBytes(16).toString("hex"),
+      });
+      await Profile.create({
+        displayName: name,
+        UserId: id,
       });
       signedId = id;
     } else {
@@ -161,8 +165,12 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const loginFacebook = async (req: Request, res: Response, next: NextFunction) => {
-  let { email } = req.body;
+const loginFacebook = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  let { email, name } = req.body;
 
   try {
     let signedId: number;
@@ -178,6 +186,10 @@ const loginFacebook = async (req: Request, res: Response, next: NextFunction) =>
         provider: "facebook",
         username: crypto.randomBytes(16).toString("hex"),
         password: crypto.randomBytes(16).toString("hex"),
+      });
+      await Profile.create({
+        displayName: name,
+        UserId: id,
       });
       signedId = id;
     } else {
@@ -306,6 +318,7 @@ export const updateProfilePassword = async (req: Request, res: Response) => {
 export default {
   validateToken,
   register,
+  loginFacebook,
   login,
   loginGmail,
   updateProfile,
