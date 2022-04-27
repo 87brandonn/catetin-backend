@@ -288,6 +288,7 @@ export const generateVerifyNumber = async (req: Request, res: Response) => {
         unique_number: Math.floor(1000 + Math.random() * 9000),
         active: true,
         UserId: user_id,
+        expirationDate: moment().add("30", "minutes").toDate(),
       })
     );
     promises.push(
