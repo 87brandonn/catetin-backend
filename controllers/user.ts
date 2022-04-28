@@ -339,38 +339,38 @@ export const verifyEmailNumber = async (req: Request, res: Response) => {
       res.status(403).send({
         message: "ID have been revoked or might not exist. Please try again",
       });
-      return;
+    } else {
+      const promises = [];
+      promises.push(
+        VerificationEmailNumber.update(
+          {
+            active: false,
+          },
+          {
+            where: {
+              id: data.id,
+            },
+          }
+        )
+      );
+      promises.push(
+        User.update(
+          {
+            verified: true,
+          },
+          {
+            where: {
+              id: user_id,
+            },
+          }
+        )
+      );
+      const promisesData = await Promise.all(promises);
+      res.send(200).send({
+        data: promisesData,
+        message: "Succesfully authenticated",
+      });
     }
-    const promises = [];
-    promises.push(
-      VerificationEmailNumber.update(
-        {
-          active: false,
-        },
-        {
-          where: {
-            id: data.id,
-          },
-        }
-      )
-    );
-    promises.push(
-      User.update(
-        {
-          verified: true,
-        },
-        {
-          where: {
-            id: user_id,
-          },
-        }
-      )
-    );
-    const promisesData = await Promise.all(promises);
-    res.send(200).send({
-      data: promisesData,
-      message: "Succesfully authenticated",
-    });
   } catch (err) {
     console.error("Failed to verify number", err);
     res.status(500).send({
