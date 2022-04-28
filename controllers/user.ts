@@ -366,7 +366,7 @@ export const verifyEmailNumber = async (req: Request, res: Response) => {
         )
       );
       const promisesData = await Promise.all(promises);
-      res.send(200).send({
+      res.status(200).send({
         data: promisesData,
         message: "Succesfully authenticated",
       });
