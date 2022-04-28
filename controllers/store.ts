@@ -30,7 +30,7 @@ const getStore = async (req: Request, res: Response) => {
   let user_id = res.locals.jwt.user_id;
 
   try {
-    const data = await Store.findOne({
+    const data = await Store.findAll({
       where: {
         UserId: user_id,
       },
