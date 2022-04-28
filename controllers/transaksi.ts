@@ -3,15 +3,16 @@ import moment from "moment";
 import { Op } from "sequelize";
 import { default as db, default as model } from "../models";
 
-const { Transaction, ItemTransaction, Item } = model;
+const { Transaction, ItemTransaction, Item, Store } = model;
 
 const insertTransaksi = async (req: Request, res: Response) => {
   let { title, tipe_transaksi, tanggal, total, notes } = req.body;
-  let user_id = res.locals.jwt.user_id;
+
+  const { id } = req.params;
 
   try {
     const data = await Transaction.create({
-      UserId: user_id,
+      StoreId: id,
       nominal: tipe_transaksi === 3 || tipe_transaksi === 4 ? 0 : total,
       transaction_date: tanggal,
       rootType:
@@ -246,7 +247,7 @@ const getTransaksi = async (
   res: Response,
   next: NextFunction
 ) => {
-  let user_id = res.locals.jwt.user_id;
+  const { id } = req.params;
   const { search, items, nominal, start_date, end_date, type } = req.query;
 
   const additional = {};
@@ -314,7 +315,7 @@ const getTransaksi = async (
   try {
     const data = await Transaction.findAll({
       where: {
-        UserId: user_id,
+        StoreId: id,
         deleted: false,
         ...additional,
       },
@@ -422,7 +423,7 @@ const deleteTransaksi = async (req: Request, res: Response) => {
 };
 
 const getTransactionSummary = async (req: Request, res: Response) => {
-  let user_id = res.locals.jwt.user_id;
+  const { id } = req.params;
   const {
     total_income,
     total_outcome,
@@ -473,7 +474,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       const income =
         (await Transaction.sum("nominal", {
           where: {
-            UserId: user_id,
+            StoreId: id,
             deleted: false,
             rootType: "income",
             ...dateQuery,
@@ -482,7 +483,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       const outcome =
         (await Transaction.sum("nominal", {
           where: {
-            UserId: user_id,
+            StoreId: id,
             deleted: false,
             rootType: "outcome",
             ...dateQuery,
@@ -505,7 +506,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                     "iwt"."ItemId" = "Item"."id" AND 
                     "iwt"."type" = '3' AND 
                     "iwt"."deleted" = false AND 
-                    "iwt"."UserId" = ${user_id}
+                    "iwt"."StoreId" = ${id}
                     ${dateQueryAsString} 
               )`),
               "total_nominal_transactions",
@@ -534,7 +535,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                   WHERE
                     "iwt"."ItemId" = "Item"."id" AND 
                     "iwt"."deleted" = false AND
-                    "iwt"."UserId" = ${user_id} AND
+                    "iwt"."StoreId" = ${id} AND
                     "iwt"."type" = '3' ${dateQueryAsString}
               )`),
               "total_amount_transactions",
@@ -556,7 +557,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     } else if (max_income) {
       const data = await Transaction.findAll({
         where: {
-          UserId: user_id,
+          StoreId: id,
           rootType: "income",
           deleted: false,
           ...dateQuery,
@@ -573,7 +574,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     } else if (max_outcome) {
       const data = await Transaction.findAll({
         where: {
-          UserId: user_id,
+          StoreId: id,
           rootType: "outcome",
           deleted: false,
           ...dateQuery,
@@ -590,7 +591,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     } else if (graph) {
       let data = await Transaction.findAll({
         where: {
-          UserId: user_id,
+          StoreId: id,
           deleted: false,
           ...dateQuery,
         },
@@ -619,7 +620,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     } else {
       const data = await Transaction.sum("nominal", {
         where: {
-          UserId: user_id,
+          StoreId: id,
           deleted: false,
           ...totalIOQuery,
         },

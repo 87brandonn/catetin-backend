@@ -8,7 +8,7 @@ export default (sequelize: Sequelize, DataTypes: any) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models: any) {
-      Transaction.belongsTo(models.User);
+      Transaction.belongsTo(models.Store);
       Transaction.belongsToMany(models.Item, {
         through: models.ItemTransaction,
       });

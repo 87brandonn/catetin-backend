@@ -8,7 +8,7 @@ export default (sequelize: Sequelize, DataTypes: any) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models: any) {
-      Scheduler.belongsTo(models.User);
+      Scheduler.belongsTo(models.Store);
       // define association here
     }
   }

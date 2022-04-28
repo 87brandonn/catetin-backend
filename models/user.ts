@@ -9,9 +9,8 @@ export default (sequelize: Sequelize, DataTypes: any) => {
      */
     static associate(models: any) {
       User.hasOne(models.Profile);
-      User.hasMany(models.Item);
-      User.hasMany(models.Transaction);
-      User.hasOne(models.Scheduler);
+      User.hasMany(models.VerificationEmailNumber);
+      User.hasMany(models.Store)
     }
   }
   User.init(

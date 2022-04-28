@@ -16,12 +16,12 @@ import transporter, { mailData } from "../nodemailer";
 const { Transaction, Scheduler } = models;
 
 export const triggerCron = async (
-  userId: number,
+  storeId: number,
   email: string,
   storeName: string,
   schedule: ISchedulerUser
 ) => {
-  const indexFound = jobs.findIndex((job) => job.id === userId);
+  const indexFound = jobs.findIndex((job) => job.id === storeId);
   const currentDate = new Date();
 
   const previous = getScheduleType(schedule);
@@ -29,7 +29,7 @@ export const triggerCron = async (
   const from = moment(currentDate).subtract(1, previous).toISOString();
   const to = currentDate.toISOString();
   const query = {
-    UserId: userId,
+    StoreId: storeId,
     transaction_date: {
       [Op.between]: [
         moment(from as string).toDate(),
@@ -118,7 +118,7 @@ export const triggerCron = async (
     },
     {
       where: {
-        UserId: userId,
+        UserId: storeId,
       },
     }
   );
@@ -136,7 +136,7 @@ export const triggerCron = async (
           );
           throw new Error(err);
         }
-        const fileName = `financial-report/LaporanKeuangan${userId}-${data.storeName}-${data.from}-${data.to}.pdf`;
+        const fileName = `financial-report/LaporanKeuangan${storeId}-${data.storeName}-${data.from}-${data.to}.pdf`;
         const file = bucket.file(fileName);
 
         await file.save(buffer, {

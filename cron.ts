@@ -5,7 +5,7 @@ import moment from "moment";
 import { triggerCron } from "./utils/cron";
 import { getCronTime } from "./utils";
 
-const { Scheduler, User, Profile } = models;
+const { Scheduler, User, Profile, Store } = models;
 
 let jobs: { id: number; job: CronJob; initDate: string }[] = [];
 
@@ -16,10 +16,10 @@ const initJobs = async () => {
         await Scheduler.findAll({
           include: [
             {
-              model: User,
+              model: Store,
               include: [
                 {
-                  model: Profile,
+                  model: User,
                 },
               ],
             },
@@ -29,7 +29,7 @@ const initJobs = async () => {
     );
     data.forEach((schedule) => {
       jobs.push({
-        id: schedule.User.id,
+        id: schedule.Store.id,
         initDate: moment(schedule.lastTrigger).toISOString(),
         job: new CronJob(
           `${getCronTime(schedule.minute, schedule.minute, "0")} ${getCronTime(
@@ -48,9 +48,9 @@ const initJobs = async () => {
           async () => {
             try {
               await triggerCron(
-                schedule.User.id,
-                schedule.User.email,
-                schedule.User.Profile?.storeName,
+                schedule.Store.id,
+                schedule.Store.User.email,
+                schedule.Store.name,
                 schedule
               );
             } catch (err) {

@@ -1,3 +1,4 @@
+import { ICatetinStore } from "./store";
 import IUser, { IProfile } from "./user";
 
 export default interface IScheduler {
@@ -15,7 +16,9 @@ export default interface IScheduler {
 }
 
 export type ISchedulerUser = IScheduler & {
-  User: IUser & {
-    Profile: IProfile;
+  Store: ICatetinStore & {
+    User: IUser & {
+      Profile: IProfile;
+    };
   };
 };

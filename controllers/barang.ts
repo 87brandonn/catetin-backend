@@ -4,7 +4,7 @@ import { ICatetinBarangWithTransaksi } from "../interfaces/barang";
 import models from "../models";
 import { getOrderQuery } from "./../utils/index";
 
-const { Item, Transaction } = models;
+const { Item, Transaction, Store } = models;
 
 const insertBarang = async (
   req: Request,
@@ -13,7 +13,7 @@ const insertBarang = async (
 ) => {
   let { name, price, picture, stock = 0 } = req.body;
 
-  let user_id = res.locals.jwt.user_id;
+  const { id } = req.params;
 
   try {
     const data = await Item.create({
@@ -21,7 +21,7 @@ const insertBarang = async (
       name,
       price,
       picture,
-      UserId: user_id,
+      StoreId: id,
     });
     res.status(200).send({
       data,
@@ -70,7 +70,7 @@ const getListBarang = async (
   res: Response,
   next: NextFunction
 ) => {
-  let user_id = res.locals.jwt.user_id;
+  const { id } = req.params;
   const { sort, nama_barang, transactionId } = req.query;
   const order = getOrderQuery(sort as string);
 
@@ -87,7 +87,7 @@ const getListBarang = async (
   try {
     let data: ICatetinBarangWithTransaksi[] = await Item.findAll({
       where: {
-        UserId: user_id,
+        StoreId: id,
         deleted: false,
         ...whereQuery,
       },

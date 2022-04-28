@@ -257,13 +257,12 @@ const updateProfile = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { storeName, displayName, profilePicture, id } = req.body;
+  let { displayName, profilePicture, id } = req.body;
   let user_id = res.locals.jwt.user_id;
 
   try {
     await Profile.upsert({
       id,
-      storeName,
       displayName,
       profilePicture,
       UserId: user_id,
