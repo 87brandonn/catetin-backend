@@ -13,6 +13,9 @@ export default (sequelize: Sequelize, DataTypes: any) => {
       Item.belongsToMany(models.Transaction, {
         through: models.ItemTransaction,
       });
+      Item.belongsToMany(models.ItemCategory, {
+        through: models.ItemItemCategory,
+      });
       Item.hasMany(models.ItemTransaction);
     }
   }

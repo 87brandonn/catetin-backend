@@ -2,9 +2,43 @@ import { NextFunction, Request, Response } from "express";
 import { Op } from "sequelize";
 import { ICatetinBarangWithTransaksi } from "../interfaces/barang";
 import models from "../models";
+import * as XLSX from "xlsx";
 import { getOrderQuery } from "./../utils/index";
 
 const { Item, Transaction, Store } = models;
+
+const importCSV = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+
+  const workbook = XLSX.read(req.file?.buffer);
+  const dataPromises = workbook.SheetNames.map((name) => {
+    const worksheet = workbook.Sheets[name];
+    const json: {
+      Name: string;
+      Price: number;
+      Stok: number;
+    }[] = XLSX.utils.sheet_to_json(worksheet);
+    if (!json[0]?.Name || !json[0]?.Price || !json[0]?.Stok) {
+      res.status(400).send({
+        message: "False table format. Please try again",
+      });
+      return [];
+    }
+    return json.map((data) =>
+      Item.create({
+        name: data.Name,
+        price: data.Price,
+        stock: data.Stok,
+        StoreId: id,
+      })
+    );
+  });
+  const data = await Promise.all(dataPromises[0]);
+  res.status(200).send({
+    data,
+    message: "Succesfully get json data",
+  });
+};
 
 const insertBarang = async (
   req: Request,
@@ -179,4 +213,5 @@ export default {
   getListBarang,
   getBarangDetail,
   deleteBarang,
+  importCSV,
 };
