@@ -17,7 +17,7 @@ app.listen(PORT, () => {
   console.log(`⚡️[server]: Server start running @https://localhost:${PORT}`);
   db.sequelize
     .sync({
-      force:
+      alter:
         true /* DANGEROUS OPERATION, please do not modify it unless you asks for permissions first */,
     })
     .then(() => {
