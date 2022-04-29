@@ -118,7 +118,7 @@ export const triggerCron = async (
     },
     {
       where: {
-        UserId: storeId,
+        StoreId: storeId,
       },
     }
   );
