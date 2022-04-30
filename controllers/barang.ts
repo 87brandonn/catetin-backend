@@ -61,9 +61,9 @@ const insertBarang = async (
       )
     );
     const dataCategory = await ItemItemCategory.bulkCreate(
-      category.map((cat: { id: number }) => ({
+      category.map((cat: number) => ({
         ItemId: data.id,
-        ItemCategoryId: cat.id,
+        ItemCategoryId: cat,
       }))
     );
     res.status(200).send({
@@ -110,9 +110,9 @@ const updateBarang = async (
     );
     promises.push(
       ItemItemCategory.bulkCreate(
-        category.map((cat: { id: number }) => ({
+        category.map((cat: number) => ({
           ItemId: id,
-          ItemCategoryId: cat.id,
+          ItemCategoryId: cat,
         }))
       )
     );
