@@ -13,6 +13,7 @@ export default (sequelize: Sequelize, DataTypes: any) => {
       ItemCategory.belongsToMany(models.Item, {
         through: models.ItemItemCategory,
       });
+      ItemCategory.hasMany(models.ItemItemCategory);
     }
   }
   ItemCategory.init(

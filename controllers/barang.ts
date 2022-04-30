@@ -5,7 +5,7 @@ import models from "../models";
 import * as XLSX from "xlsx";
 import { getOrderQuery } from "./../utils/index";
 
-const { Item, Transaction, Store } = models;
+const { Item, Transaction, ItemItemCategory, ItemCategory } = models;
 
 const importCSV = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
@@ -45,20 +45,29 @@ const insertBarang = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { name, price, picture, stock = 0 } = req.body;
-
+  let { name, price, picture, stock = 0, category } = req.body;
   const { id } = req.params;
 
   try {
-    const data = await Item.create({
-      stock,
-      name,
-      price,
-      picture,
-      StoreId: id,
-    });
+    const data = JSON.parse(
+      JSON.stringify(
+        await Item.create({
+          stock,
+          name,
+          price,
+          picture,
+          StoreId: id,
+        })
+      )
+    );
+    const dataCategory = await ItemItemCategory.bulkCreate(
+      category.map((cat: { id: number }) => ({
+        ItemId: data.id,
+        ItemCategoryId: cat.id,
+      }))
+    );
     res.status(200).send({
-      data,
+      data: [data, dataCategory],
       message: "Succesfully insert barang",
     });
   } catch (err) {
@@ -73,22 +82,41 @@ const updateBarang = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { id, name, price, picture, stock } = req.body;
+  let { id, name, price, picture, stock, category } = req.body;
 
   try {
-    const data = await Item.update(
-      {
-        name,
-        price,
-        picture,
-        stock,
-      },
-      {
-        where: {
-          id,
+    const promises = [];
+    promises.push(
+      Item.update(
+        {
+          name,
+          price,
+          picture,
+          stock,
         },
-      }
+        {
+          where: {
+            id,
+          },
+        }
+      )
     );
+    promises.push(
+      ItemItemCategory.destroy({
+        where: {
+          ItemId: id,
+        },
+      })
+    );
+    promises.push(
+      ItemItemCategory.bulkCreate(
+        category.map((cat: { id: number }) => ({
+          ItemId: id,
+          ItemCategoryId: cat.id,
+        }))
+      )
+    );
+    const data = await Promise.all(promises);
     res.status(200).send({
       data,
       message: "Succesfully update barang",
@@ -126,9 +154,14 @@ const getListBarang = async (
         ...whereQuery,
       },
       order: [...(order || []), ["updatedAt", "DESC"]],
-      include: {
-        model: Transaction,
-      },
+      include: [
+        {
+          model: Transaction,
+        },
+        {
+          model: ItemCategory,
+        },
+      ],
     });
 
     if (transactionId) {
