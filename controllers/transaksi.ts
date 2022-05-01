@@ -435,6 +435,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     graph,
     start_date,
     end_date,
+    timezone = 'Asia/Jakarta',
   } = req.query;
 
   let dateQuery = {};
@@ -596,7 +597,12 @@ const getTransactionSummary = async (req: Request, res: Response) => {
           ...dateQuery,
         },
         attributes: [
-          [db.sequelize.literal(`DATE("transaction_date")`), "date"],
+          [
+            db.sequelize.literal(
+              `DATE(timezone('${timezone}',"transaction_date"))`
+            ),
+            "date",
+          ],
           [db.sequelize.fn(`sum`, db.sequelize.col("nominal")), "sum_nominal"],
           "rootType",
         ],
