@@ -189,13 +189,20 @@ const getListBarang = async (
 
 const getBarangDetail = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { transaksi } = req.query;
-  const modelQuery = {};
+  const { transaksi, category } = req.query;
+  const modelQuery: {
+    include: { model: any }[];
+  } = {
+    include: [],
+  };
   if (transaksi) {
-    Object.assign(modelQuery, {
-      include: {
-        model: Transaction,
-      },
+    modelQuery.include.push({
+      model: Transaction,
+    });
+  }
+  if (category) {
+    modelQuery.include.push({
+      model: ItemCategory,
     });
   }
   try {
