@@ -36,6 +36,7 @@ export const triggerCron = async (
         moment(to as string).toDate(),
       ],
     },
+    deleted: false,
   };
 
   let [transaction, income, outcome]: [
