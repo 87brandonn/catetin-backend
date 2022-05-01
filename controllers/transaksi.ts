@@ -172,6 +172,14 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
         }
       )
     );
+    promises.push(
+      ItemTransaction.destroy({
+        where: {
+          ItemId: barang_id,
+          TransactionId: transaksi_id,
+        },
+      })
+    );
     const dataResult = await Promise.all(promises);
     res.send({
       data: dataResult,
