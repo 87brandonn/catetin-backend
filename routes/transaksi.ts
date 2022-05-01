@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.put("/detail", extractJWT, controller.updateTransaksiDetail);
 router.post("/detail", extractJWT, controller.insertTransaksiDetail);
+router.delete("/detail", extractJWT, controller.deleteTransaksiDetail);
 router.post("/:id", extractJWT, controller.insertTransaksi);
 router.get("/summary/:id", extractJWT, controller.getTransactionSummary);
 router.get("/:id/list", extractJWT, controller.getTransaksi);

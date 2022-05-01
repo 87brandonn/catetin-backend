@@ -128,6 +128,62 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
   }
 };
 
+const deleteTransaksiDetail = async (req: Request, res: Response) => {
+  const { transaksi_id, barang_id } = req.body;
+  const promises = [];
+
+  try {
+    const data = JSON.parse(
+      JSON.stringify(
+        await ItemTransaction.findOne({
+          where: {
+            ItemId: barang_id,
+            TransactionId: transaksi_id,
+          },
+          include: {
+            model: Transaction,
+          },
+        })
+      )
+    );
+    promises.push(
+      Transaction.update(
+        {
+          nominal: db.sequelize.literal(`nominal - ${data.total} `),
+        },
+        {
+          where: {
+            id: transaksi_id,
+          },
+        }
+      )
+    );
+    promises.push(
+      Item.update(
+        {
+          stock: db.sequelize.literal(
+            `stock ${data.Transaction.type === "4" ? "-" : "+"} ${data.amount}`
+          ),
+        },
+        {
+          where: {
+            id: barang_id,
+          },
+        }
+      )
+    );
+    const dataResult = await Promise.all(promises);
+    res.send({
+      data: dataResult,
+      message: "Succesfully delete transaksi detail",
+    });
+  } catch (err) {
+    res.status(500).send({
+      message: "Failed to delete transaction detail",
+    });
+  }
+};
+
 const updateTransaksiDetail = async (req: Request, res: Response) => {
   const { transaksi_id, barang_id, amount } = req.body;
   const promises = [];
@@ -435,7 +491,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     graph,
     start_date,
     end_date,
-    timezone = 'Asia/Jakarta',
+    timezone = "Asia/Jakarta",
   } = req.query;
 
   let dateQuery = {};
@@ -654,5 +710,6 @@ export default {
   getTransaksiById,
   updateTransaksi,
   deleteTransaksi,
+  deleteTransaksiDetail,
   getTransactionSummary,
 };
