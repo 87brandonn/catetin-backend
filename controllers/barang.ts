@@ -137,6 +137,8 @@ const getListBarang = async (
     req.query;
   const order = getOrderQuery(sort as string);
 
+  const subQueryCategories = {};
+
   const whereQuery = {};
 
   if (nama_barang) {
@@ -164,9 +166,11 @@ const getListBarang = async (
   }
 
   if (categories) {
-    Object.assign(whereQuery, {
-      "$ItemCategories.id$": {
-        [Op.in]: categories,
+    Object.assign(subQueryCategories, {
+      where: {
+        id: {
+          [Op.in]: categories,
+        },
       },
     });
   }
@@ -182,11 +186,10 @@ const getListBarang = async (
       include: [
         {
           model: Transaction,
-          required: false,
         },
         {
           model: ItemCategory,
-          required: false,
+          ...subQueryCategories,
         },
       ],
     });
