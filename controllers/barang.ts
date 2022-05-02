@@ -133,7 +133,8 @@ const getListBarang = async (
   next: NextFunction
 ) => {
   const { id } = req.params;
-  const { sort, nama_barang, transactionId } = req.query;
+  const { sort, categories, harga, stok, nama_barang, transactionId } =
+    req.query;
   const order = getOrderQuery(sort as string);
 
   const whereQuery = {};
@@ -142,6 +143,30 @@ const getListBarang = async (
     Object.assign(whereQuery, {
       name: {
         [Op.like]: `%${nama_barang}%`,
+      },
+    });
+  }
+
+  if (stok) {
+    Object.assign(whereQuery, {
+      stock: {
+        [Op.between]: stok,
+      },
+    });
+  }
+
+  if (harga) {
+    Object.assign(whereQuery, {
+      price: {
+        [Op.between]: harga,
+      },
+    });
+  }
+
+  if (categories) {
+    Object.assign(whereQuery, {
+      "$ItemCategories.id$": {
+        [Op.in]: categories,
       },
     });
   }
