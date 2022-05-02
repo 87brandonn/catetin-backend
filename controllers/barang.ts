@@ -172,6 +172,8 @@ const getListBarang = async (
           [Op.in]: categories,
         },
       },
+      required: false,
+      right: true,
     });
   }
 
