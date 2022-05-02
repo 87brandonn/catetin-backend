@@ -7,6 +7,16 @@ const { ItemCategory } = models;
 
 const getItemCategory = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { name } = req.query;
+
+  const additionalQuery = {};
+  if (name) {
+    Object.assign(additionalQuery, {
+      name: {
+        [Op.like]: `%${name}%`,
+      },
+    });
+  }
   try {
     const responseData = await ItemCategory.findAll({
       where: {
@@ -18,6 +28,7 @@ const getItemCategory = async (req: Request, res: Response) => {
             StoreId: id,
           },
         ],
+        ...additionalQuery,
       },
       order: [["name", "ASC"]],
     });
