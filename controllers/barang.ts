@@ -182,9 +182,11 @@ const getListBarang = async (
       include: [
         {
           model: Transaction,
+          required: false,
         },
         {
           model: ItemCategory,
+          required: false,
         },
       ],
     });
