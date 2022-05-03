@@ -15,7 +15,7 @@ router.post("/logout", controller.logout);
 router.post("/login", controller.login);
 router.post("/register", controller.register);
 router.get("/profile", extractJWT, controller.getProfile);
-router.put("/profile/password", extractJWT, controller.updatePassword);
+router.put("/profile/password", controller.updatePassword);
 router.put("/profile", extractJWT, controller.updateProfile);
 
 export default router;
