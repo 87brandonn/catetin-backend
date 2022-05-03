@@ -151,7 +151,7 @@ export const triggerCron = async (
 
         await transporter.sendMail({
           from: "brandonpardede25@gmail.com",
-          to,
+          to: email,
           subject: "Laporan Keuangan Otomatis",
           html: `Hi, ${email}. Berikut adalah laporan keuangan kamu untuk periode ini. Terimakasih telah menggunakan Catetin!`,
           attachments: [
