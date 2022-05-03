@@ -410,22 +410,8 @@ export const verifyEmailNumber = async (req: Request, res: Response) => {
 };
 
 export const updatePassword = async (req: Request, res: Response) => {
-  let { current_password, new_password, refreshToken } = req.body;
+  let { current_password, new_password } = req.body;
   try {
-    /* Start region */
-    /* Prevent unwanted user to change token when refresh token already revoked */
-    const refreshTokenData = await RefreshToken.findOne({
-      where: {
-        token: refreshToken,
-      },
-    });
-
-    if (!refreshTokenData) {
-      return res.sendStatus(403);
-    }
-
-    /* End region */
-
     const user_id = res.locals.jwt.user_id;
 
     const users = await User.findOne({
