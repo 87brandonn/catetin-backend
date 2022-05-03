@@ -40,7 +40,8 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     });
     if (users) {
       res.status(400).json({
-        message: "Username is used",
+        message:
+          "Email and username combination has already been used. Please try again",
       });
       return;
     }
