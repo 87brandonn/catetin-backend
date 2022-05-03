@@ -150,7 +150,10 @@ export const triggerCron = async (
         );
 
         await transporter.sendMail({
-          ...mailData(email),
+          from: "brandonpardede25@gmail.com",
+          to,
+          subject: "Laporan Keuangan Otomatis",
+          html: `Hi, ${email}. Berikut adalah laporan keuangan kamu untuk periode ini. Terimakasih telah menggunakan Catetin!`,
           attachments: [
             {
               filename: fileName.replace("financial-report/", ""),

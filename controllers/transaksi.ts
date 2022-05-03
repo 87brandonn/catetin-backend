@@ -789,14 +789,8 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
 
     const data = {
       storeName: storeData.name || "Catetin Toko",
-      from: moment(from)
-        .locale("id")
-        .tz("Asia/Jakarta")
-        .format("DD MMMM YYYY HH:mm"),
-      to: moment(to)
-        .locale("id")
-        .tz("Asia/Jakarta")
-        .format("DD MMMM YYYY HH:mm"),
+      from: moment(from).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY"),
+      to: moment(to).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY"),
       item_export: Number(
         transaction?.find((eachTransaction) => eachTransaction.type === "3")
           ?.total_amount || 0
@@ -847,7 +841,10 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
         );
 
         await transporter.sendMail({
-          ...mailData(storeData.User.email),
+          from: "brandonpardede25@gmail.com",
+          to: storeData.User.email,
+          subject: "Laporan Keuangan Manual",
+          html: `Hi, ${storeData.User.email}. Berikut adalah laporan keuangan kamu untuk periode ${data.from} s/d ${data.to}. Terimakasih telah menggunakan Catetin!`,
           attachments: [
             {
               filename: fileName.replace("financial-report/", ""),
