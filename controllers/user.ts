@@ -53,7 +53,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
       },
       config.server.token.REFRESH_TOKEN_SECRET,
       {
-        expiresIn: "2m",
+        expiresIn: "14d",
       }
     );
     await RefreshToken.create({
@@ -114,7 +114,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
             },
             config.server.token.REFRESH_TOKEN_SECRET,
             {
-              expiresIn: "2m",
+              expiresIn: "14d",
             }
           );
           await RefreshToken.create({
@@ -172,7 +172,7 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
       },
       config.server.token.REFRESH_TOKEN_SECRET,
       {
-        expiresIn: "2m",
+        expiresIn: "14d",
       }
     );
     await RefreshToken.create({
@@ -231,7 +231,7 @@ const loginFacebook = async (
       },
       config.server.token.REFRESH_TOKEN_SECRET,
       {
-        expiresIn: "2m",
+        expiresIn: "14d",
       }
     );
     await RefreshToken.create({
@@ -409,9 +409,23 @@ export const verifyEmailNumber = async (req: Request, res: Response) => {
   }
 };
 
-export const updateProfilePassword = async (req: Request, res: Response) => {
-  let { current_password, new_password } = req.body;
+export const updatePassword = async (req: Request, res: Response) => {
+  let { current_password, new_password, refreshToken } = req.body;
   try {
+    /* Start region */
+    /* Prevent unwanted user to change token when refresh token already revoked */
+    const refreshTokenData = await RefreshToken.findOne({
+      where: {
+        token: refreshToken,
+      },
+    });
+
+    if (!refreshTokenData) {
+      return res.sendStatus(403);
+    }
+
+    /* End region */
+
     const user_id = res.locals.jwt.user_id;
 
     const users = await User.findOne({
@@ -423,13 +437,17 @@ export const updateProfilePassword = async (req: Request, res: Response) => {
       current_password,
       users.dataValues.password
     );
-    let statusCode = 200;
-    let message = "Succesfully change password";
+
     if (!result) {
-      statusCode = 200;
-      message = "Wrong password. Please recheck again";
-    } else {
-      await User.update(
+      return res.status(400).send({
+        message: "Wrong password. Please recheck again",
+      });
+    }
+
+    const promises = [];
+
+    promises.push(
+      User.update(
         {
           password: await bcryptjs.hash(new_password, 10),
         },
@@ -438,10 +456,35 @@ export const updateProfilePassword = async (req: Request, res: Response) => {
             id: user_id,
           },
         }
-      );
-    }
-    return res.status(statusCode).send({
-      message,
+      )
+    );
+
+    promises.push(
+      RefreshToken.destroy({
+        where: {
+          UserId: user_id,
+        },
+      })
+    );
+
+    await Promise.all(promises);
+
+    const newRefreshToken = await RefreshToken.create({
+      token: jwt.sign(
+        {
+          user_id,
+        },
+        config.server.token.REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "14d",
+        }
+      ),
+      UserId: user_id,
+    });
+
+    return res.status(200).send({
+      refreshToken: newRefreshToken,
+      message: "Succesfully change password",
     });
   } catch (error: any) {
     return res.status(500).json({
@@ -504,7 +547,7 @@ export default {
   loginGmail,
   updateProfile,
   getProfile,
-  updateProfilePassword,
+  updatePassword,
   getRefreshToken,
   logout,
 };

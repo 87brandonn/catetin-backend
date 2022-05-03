@@ -13,7 +13,7 @@ const signJWT = (userId: number) => {
     },
     config.server.token.secret,
     {
-      expiresIn: "1m",
+      expiresIn: "1h",
     }
   );
 };
