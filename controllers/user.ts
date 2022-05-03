@@ -520,15 +520,26 @@ export const verifyEmailNumber = async (req: Request, res: Response) => {
 };
 
 export const updatePassword = async (req: Request, res: Response) => {
-  let { current_password, new_password } = req.body;
+  let {
+    current_password,
+    new_password,
+    provider = "catetin",
+    email,
+  } = req.body;
   try {
-    const user_id = res.locals.jwt.user_id;
-
     const users = await User.findOne({
       where: {
-        id: user_id,
+        email,
+        provider,
       },
     });
+
+    if (!users) {
+      return res.status(400).send({
+        message: "No user associated with this email. Please try again",
+      });
+    }
+
     const result = await bcryptjs.compare(
       current_password,
       users.dataValues.password
@@ -549,7 +560,7 @@ export const updatePassword = async (req: Request, res: Response) => {
         },
         {
           where: {
-            id: user_id,
+            id: users.dataValues.id,
           },
         }
       )
@@ -558,7 +569,7 @@ export const updatePassword = async (req: Request, res: Response) => {
     promises.push(
       RefreshToken.destroy({
         where: {
-          UserId: user_id,
+          UserId: users.dataValues.id,
         },
       })
     );
