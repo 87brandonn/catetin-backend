@@ -520,12 +520,7 @@ export const verifyEmailNumber = async (req: Request, res: Response) => {
 };
 
 export const updatePassword = async (req: Request, res: Response) => {
-  let {
-    current_password,
-    new_password,
-    provider = "catetin",
-    email,
-  } = req.body;
+  let { new_password, provider = "catetin", email } = req.body;
   try {
     const users = await User.findOne({
       where: {
@@ -537,17 +532,6 @@ export const updatePassword = async (req: Request, res: Response) => {
     if (!users) {
       return res.status(400).send({
         message: "No user associated with this email. Please try again",
-      });
-    }
-
-    const result = await bcryptjs.compare(
-      current_password,
-      users.dataValues.password
-    );
-
-    if (!result) {
-      return res.status(400).send({
-        message: "Wrong password. Please recheck again",
       });
     }
 
