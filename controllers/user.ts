@@ -469,21 +469,7 @@ export const updatePassword = async (req: Request, res: Response) => {
 
     await Promise.all(promises);
 
-    const newRefreshToken = await RefreshToken.create({
-      token: jwt.sign(
-        {
-          user_id,
-        },
-        config.server.token.REFRESH_TOKEN_SECRET,
-        {
-          expiresIn: "14d",
-        }
-      ),
-      UserId: user_id,
-    });
-
     return res.status(200).send({
-      refreshToken: newRefreshToken,
       message: "Succesfully change password",
     });
   } catch (error: any) {
