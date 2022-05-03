@@ -34,6 +34,8 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     const users = await User.findOne({
       where: {
         username,
+        email,
+        provider: "catetin",
       },
     });
     if (users) {
