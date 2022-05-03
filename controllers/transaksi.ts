@@ -860,6 +860,10 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
         });
       });
   } catch (err) {
+    console.error(
+      "An error occured while generating manual financial report",
+      err
+    );
     res.status(500).send({
       message: "Internal error occured. Failed to download manual transactions",
     });
