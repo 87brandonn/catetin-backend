@@ -1,9 +1,16 @@
 import { NextFunction, Request, Response } from "express";
-import moment from "moment";
+import handlebars from "handlebars";
+import fs from "fs";
+import pdf from "html-pdf";
+import moment from "moment-timezone";
+import { format } from "util";
+import path from "path";
 import { Op } from "sequelize";
 import { default as db, default as model } from "../models";
+import { bucket } from "./media";
+import transporter, { mailData } from "../nodemailer";
 
-const { Transaction, ItemTransaction, Item, Store } = model;
+const { Transaction, ItemTransaction, Item, Store, User } = model;
 
 const insertTransaksi = async (req: Request, res: Response) => {
   let { title, tipe_transaksi, tanggal, total, notes } = req.body;
@@ -710,6 +717,155 @@ const getTransactionSummary = async (req: Request, res: Response) => {
   }
 };
 
+const downloadManualTransactions = async (req: Request, res: Response) => {
+  const { start_date, end_date, store_id } = req.body;
+  try {
+    const storeData = JSON.parse(
+      JSON.stringify(
+        await Store.findOne({
+          where: {
+            id: store_id,
+            include: [
+              {
+                model: User,
+              },
+            ],
+          },
+        })
+      )
+    );
+    const from = moment(start_date).toISOString();
+    const to = moment(end_date).toISOString();
+    const query = {
+      StoreId: store_id,
+      transaction_date: {
+        [Op.between]: [
+          moment(from as string).toDate(),
+          moment(to as string).toDate(),
+        ],
+      },
+      deleted: false,
+    };
+
+    let [transaction, income, outcome]: [
+      transaction: { type: string; total_amount: string }[],
+      income: number | undefined,
+      outcome: number | undefined
+    ] = await Promise.all([
+      Transaction.findAll({
+        where: {
+          ...query,
+        },
+        attributes: [
+          "type",
+          [db.sequelize.fn("sum", db.sequelize.col("nominal")), "total_amount"],
+        ],
+        group: ["type"],
+      }),
+      Transaction.sum("nominal", {
+        where: {
+          rootType: "income",
+          ...query,
+        },
+      }),
+      Transaction.sum("nominal", {
+        where: {
+          rootType: "outcome",
+          ...query,
+        },
+      }),
+    ]);
+
+    transaction = JSON.parse(JSON.stringify(transaction));
+    income = JSON.parse(JSON.stringify(income));
+    outcome = JSON.parse(JSON.stringify(outcome));
+
+    const impression = {
+      value: Number(Math.abs((income || 0) - (outcome || 0))).toLocaleString(
+        "id-ID"
+      ),
+      profit: (income || 0) > (outcome || 0) ? true : false,
+    };
+
+    const data = {
+      storeName: storeData.name || "Catetin Toko",
+      from: moment(from)
+        .locale("id")
+        .tz("Asia/Jakarta")
+        .format("DD MMMM YYYY HH:mm"),
+      to: moment(to)
+        .locale("id")
+        .tz("Asia/Jakarta")
+        .format("DD MMMM YYYY HH:mm"),
+      item_export: Number(
+        transaction?.find((eachTransaction) => eachTransaction.type === "3")
+          ?.total_amount || 0
+      )?.toLocaleString("id-ID"),
+      additional_income: Number(
+        transaction?.find((eachTransaction) => eachTransaction.type === "2")
+          ?.total_amount || 0
+      )?.toLocaleString("id-ID"),
+      item_import: Number(
+        transaction?.find((eachTransaction) => eachTransaction.type === "4")
+          ?.total_amount || 0
+      )?.toLocaleString("id-ID"),
+      additional_outcome: Number(
+        transaction?.find((eachTransaction) => eachTransaction.type === "1")
+          ?.total_amount || 0
+      )?.toLocaleString("id-ID"),
+      income: Number(income || 0).toLocaleString("id-ID"),
+      outcome: Number(outcome || 0).toLocaleString("id-ID"),
+      impression,
+    };
+
+    const __dirname = path.resolve();
+    const filePath = path.join(__dirname, "/template/financial-report.html");
+    const source = fs.readFileSync(filePath, "utf-8");
+    const template = handlebars.compile(source);
+    const html = template(data);
+
+    pdf
+      .create(html, {
+        format: "A4",
+      })
+      .toBuffer(async (err: any, buffer: any) => {
+        if (err) {
+          return res.status(500).send({
+            message: "An error occured while generating PDF buffer",
+          });
+        }
+        const fileName = `financial-report/LaporanKeuangan${store_id}-${data.storeName}-${data.from}-${data.to}.pdf`;
+        const file = bucket.file(fileName);
+
+        await file.save(buffer, {
+          contentType: "application/pdf",
+        });
+        await file.makePublic();
+
+        const publicUrl = format(
+          `https://storage.googleapis.com/${bucket.name}/${fileName}`
+        );
+
+        await transporter.sendMail({
+          ...mailData(storeData.User.email),
+          attachments: [
+            {
+              filename: fileName.replace("financial-report/", ""),
+              path: publicUrl,
+            },
+          ],
+        });
+        return res.status(200).send({
+          message: `Manual financial report has been sent succesfully to email ${storeData.User.email} `,
+        });
+      });
+  } catch (err) {
+    res.status(500).send({
+      message: "Internal error occured. Failed to download manual transactions",
+    });
+  }
+};
+
 export default {
   insertTransaksi,
   insertTransaksiDetail,
@@ -717,6 +873,7 @@ export default {
   getTransaksi,
   getTransaksiById,
   updateTransaksi,
+  downloadManualTransactions,
   deleteTransaksi,
   deleteTransaksiDetail,
   getTransactionSummary,
