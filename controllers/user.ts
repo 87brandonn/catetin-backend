@@ -402,7 +402,6 @@ export const generatePasswordResetNumber = async (
           },
           { username: email },
         ],
-        provider: "catetin",
       },
     });
     if (!userData) {
@@ -446,8 +445,12 @@ export const verifyResetPassword = async (req: Request, res: Response) => {
   try {
     let userData = await User.findOne({
       where: {
-        email,
-        provider: "catetin",
+        [Op.or]: [
+          {
+            email,
+          },
+          { username: email },
+        ],
       },
     });
     if (!userData) {
@@ -600,12 +603,11 @@ export const verifyEmailNumber = async (req: Request, res: Response) => {
 };
 
 export const updatePassword = async (req: Request, res: Response) => {
-  let { new_password, provider = "catetin", email } = req.body;
+  let { new_password, email } = req.body;
   try {
     const users = await User.findOne({
       where: {
         email,
-        provider,
       },
     });
 
