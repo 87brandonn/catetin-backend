@@ -110,7 +110,6 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await User.findOne({
       where: {
-        provider: "catetin",
         [Op.or]: [
           {
             username,
