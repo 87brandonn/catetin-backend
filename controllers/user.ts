@@ -476,6 +476,24 @@ const getRefreshToken = async (req: Request, res: Response) => {
   );
 };
 
+export const logout = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  try {
+    await RefreshToken.destroy({
+      where: {
+        token: refreshToken,
+      },
+    });
+    res.status(200).send({
+      message: "Succesfully perform logout. Refresh token destroyed",
+    });
+  } catch (err) {
+    res.status(500).send({
+      message: "Internal server error. Failed to perform logout.",
+    });
+  }
+};
+
 export default {
   validateToken,
   register,
@@ -488,4 +506,5 @@ export default {
   getProfile,
   updateProfilePassword,
   getRefreshToken,
+  logout,
 };

@@ -9,6 +9,7 @@ router.post("/login/facebook", controller.loginFacebook);
 router.post("/login/gmail", controller.loginGmail);
 router.get("/verify", extractJWT, controller.generateVerifyNumber);
 router.post("/verify", extractJWT, controller.verifyEmailNumber);
+router.post("/logout", controller.logout);
 router.post("/login", controller.login);
 router.post("/register", controller.register);
 router.get("/profile", extractJWT, controller.getProfile);
