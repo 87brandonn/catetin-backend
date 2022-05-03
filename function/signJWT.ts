@@ -1,51 +1,21 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config";
 import logging from "../config/logging";
-import user from "../controllers/user";
-import IUser from "../interfaces/user";
 
 const NAMESPACE = "Auth";
 
-const signJWT = (
-  userId: number,
-  callback: (error: Error | null, token: string | null) => void
-): void => {
-  var timeSinceEpoch = new Date().getTime();
-  var expirationTime =
-    timeSinceEpoch + Number(config.server.token.expireTime) * 100000;
-  var expirationTimeInSeconds = Math.floor(expirationTime / 1000);
-
+const signJWT = (userId: number) => {
   logging.info(NAMESPACE, `Attempting to sign token for ${userId}`);
 
-  try {
-    jwt.sign(
-      {
-        user_id: userId,
-      },
-      config.server.token.secret,
-      {
-        issuer: config.server.token.issuer,
-        algorithm: "HS256",
-        expiresIn: expirationTimeInSeconds,
-      },
-      (error, token) => {
-        if (error) {
-          callback(error, null);
-        } else if (token) {
-          callback(null, token);
-        }
-      }
-    );
-  } catch (error) {
-    let errorMessage = "Failed to do something exceptional";
-    if (error instanceof Error) {
-      errorMessage = error.message;
-      logging.error(NAMESPACE, error.message, error);
-      callback(error, null);
+  return jwt.sign(
+    {
+      user_id: userId,
+    },
+    config.server.token.secret,
+    {
+      expiresIn: "1m",
     }
-    console.log(errorMessage);
-    callback(null, null);
-  }
+  );
 };
 
 export default signJWT;

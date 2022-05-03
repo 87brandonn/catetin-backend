@@ -10,23 +10,17 @@ const extractJWT = (req: Request, res: Response, next: NextFunction) => {
 
   let token = req.headers.authorization?.split(" ")[1];
 
-  if (token) {
-    jwt.verify(token, config.server.token.secret, (error, decoded) => {
-      if (error) {
-        return res.status(404).json({
-          message: error,
-          error,
-        });
-      } else {
-        res.locals.jwt = decoded;
-        next();
-      }
-    });
-  } else {
-    return res.status(401).json({
-      message: "Unauthorized",
-    });
+  if (!token) {
+    return res.sendStatus(401);
   }
+
+  jwt.verify(token, config.server.token.secret, (error, decoded) => {
+    if (error) {
+      return res.sendStatus(403);
+    }
+    res.locals.jwt = decoded;
+    next();
+  });
 };
 
 export default extractJWT;

@@ -3,6 +3,7 @@ import controller from "../controllers/user";
 import extractJWT from "../middleware/extractJWT";
 const router = express.Router();
 
+router.post("/token", controller.getRefreshToken);
 router.get("/validate", extractJWT, controller.validateToken);
 router.post("/login/facebook", controller.loginFacebook);
 router.post("/login/gmail", controller.loginGmail);

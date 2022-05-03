@@ -1,15 +1,17 @@
 import bcryptjs from "bcryptjs";
 import { NextFunction, Request, Response } from "express";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
 import logging from "../config/logging";
 import signJWT from "../function/signJWT";
 import model from "../models";
 import moment from "moment";
 import transporter from "../nodemailer";
+import config from "../config/config";
 
 const NAMESPACE = "User";
-const { User, Profile, VerificationEmailNumber } = model;
+const { User, Profile, VerificationEmailNumber, RefreshToken } = model;
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
   logging.info(NAMESPACE, "Token validated, user authorized.");
@@ -44,19 +46,26 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
       verified: false,
     });
 
-    signJWT(id, (_error, token) => {
-      if (_error) {
-        return res.status(401).json({
-          message: "Unable to Sign JWT",
-          error: _error,
-        });
-      } else if (token) {
-        res.status(200).json({
-          message: "Auth Successful",
-          token,
-          user_id: id,
-        });
+    const token = signJWT(id);
+    const refreshToken = jwt.sign(
+      {
+        user_id: id,
+      },
+      config.server.token.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: "2m",
       }
+    );
+    await RefreshToken.create({
+      token: refreshToken,
+      UserId: id,
+    });
+
+    res.status(200).json({
+      message: "Auth Successful",
+      token,
+      refreshToken,
+      user_id: id,
     });
   } catch (error: any) {
     return res.status(500).json({
@@ -89,28 +98,38 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
         message: "User not found",
       });
     }
-    bcryptjs.compare(password, users.dataValues.password, (error, result) => {
-      if (error || !result) {
-        return res.status(401).json({
-          message: "Password Mismatch",
-        });
-      } else if (result) {
-        signJWT(users.dataValues.id, (_error, token) => {
-          if (_error) {
-            return res.status(401).json({
-              message: "Unable to Sign JWT",
-              error: _error,
-            });
-          } else if (token) {
-            return res.status(200).json({
-              message: "Auth Successful",
-              token,
-              user: users[0],
-            });
-          }
-        });
+    bcryptjs.compare(
+      password,
+      users.dataValues.password,
+      async (error, result) => {
+        if (error || !result) {
+          return res.status(401).json({
+            message: "Password Mismatch",
+          });
+        } else if (result) {
+          const token = signJWT(users.dataValues.id);
+          const refreshToken = jwt.sign(
+            {
+              user_id: users.dataValues.id,
+            },
+            config.server.token.REFRESH_TOKEN_SECRET,
+            {
+              expiresIn: "2m",
+            }
+          );
+          await RefreshToken.create({
+            token: refreshToken,
+            UserId: users.dataValues.id,
+          });
+          return res.status(200).json({
+            message: "Auth Successful",
+            token,
+            refreshToken,
+            user: users,
+          });
+        }
       }
-    });
+    );
   } catch (err: any) {
     return res.status(500).json({
       message: err.message,
@@ -146,20 +165,25 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
     } else {
       signedId = users.dataValues.id;
     }
-    signJWT(signedId, (_error, token) => {
-      if (_error) {
-        return res.status(401).json({
-          message: "Unable to Sign JWT",
-
-          error: _error,
-        });
-      } else if (token) {
-        return res.status(200).json({
-          message: "Auth Successful",
-          token,
-          user: signedId,
-        });
+    const token = signJWT(signedId);
+    const refreshToken = jwt.sign(
+      {
+        user_id: signedId,
+      },
+      config.server.token.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: "2m",
       }
+    );
+    await RefreshToken.create({
+      token: refreshToken,
+      UserId: signedId,
+    });
+    return res.status(200).json({
+      message: "Auth Successful",
+      token,
+      refreshToken,
+      user: signedId,
     });
   } catch (err: any) {
     return res.status(500).json({
@@ -200,19 +224,25 @@ const loginFacebook = async (
     } else {
       signedId = users.dataValues.id;
     }
-    signJWT(signedId, (_error, token) => {
-      if (_error) {
-        return res.status(401).json({
-          message: "Unable to Sign JWT",
-          error: _error,
-        });
-      } else if (token) {
-        return res.status(200).json({
-          message: "Auth Successful",
-          token,
-          user: signedId,
-        });
+    const token = signJWT(signedId);
+    const refreshToken = jwt.sign(
+      {
+        user_id: signedId,
+      },
+      config.server.token.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: "2m",
       }
+    );
+    await RefreshToken.create({
+      token: refreshToken,
+      UserId: signedId,
+    });
+    return res.status(200).json({
+      message: "Auth Successful",
+      token,
+      refreshToken,
+      user: signedId,
     });
   } catch (err: any) {
     return res.status(500).json({
@@ -420,6 +450,32 @@ export const updateProfilePassword = async (req: Request, res: Response) => {
     });
   }
 };
+
+const getRefreshToken = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.sendStatus(401);
+  const data = await RefreshToken.findOne({
+    where: {
+      token: refreshToken,
+    },
+  });
+  if (!data) {
+    return res.sendStatus(403);
+  }
+  jwt.verify(
+    refreshToken,
+    config.server.token.REFRESH_TOKEN_SECRET,
+    (err: any, user: any) => {
+      if (err) return res.sendStatus(403);
+      const accessToken = signJWT(user.user_id);
+      res.status(200).send({
+        data: accessToken,
+        message: "Succesfully get accessToken from refreshToken",
+      });
+    }
+  );
+};
+
 export default {
   validateToken,
   register,
@@ -431,4 +487,5 @@ export default {
   updateProfile,
   getProfile,
   updateProfilePassword,
+  getRefreshToken,
 };

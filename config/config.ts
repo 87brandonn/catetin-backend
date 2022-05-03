@@ -20,6 +20,8 @@ const SERVER_TOKEN_EXPIRETIME = process.env.SERVER_TOKEN_EXPIRETIME || 3600;
 const SERVER_TOKEN_ISSUER = process.env.SERVER_TOKEN_ISSUER || "coolIssuer";
 const SERVER_TOKEN_SECRET =
   process.env.SERVER_TOKEN_SECRET || "superencryptedsecret";
+const SERVER_REFRESH_TOKEN_SECRET =
+  process.env.SERVER_REFRESH_TOKEN_SECRET || "superencryptedrefreshsecret";
 
 const SERVER = {
   hostname: SERVER_HOSTNAME,
@@ -28,6 +30,7 @@ const SERVER = {
     expireTime: SERVER_TOKEN_EXPIRETIME,
     issuer: SERVER_TOKEN_ISSUER,
     secret: SERVER_TOKEN_SECRET,
+    REFRESH_TOKEN_SECRET: SERVER_REFRESH_TOKEN_SECRET,
   },
 };
 
