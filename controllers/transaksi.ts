@@ -725,12 +725,12 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
         await Store.findOne({
           where: {
             id: store_id,
-            include: [
-              {
-                model: User,
-              },
-            ],
           },
+          include: [
+            {
+              model: User,
+            },
+          ],
         })
       )
     );
