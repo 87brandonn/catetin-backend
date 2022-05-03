@@ -31,50 +31,70 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
   let { username, password, email } = req.body;
 
   try {
-    const users = await User.findOne({
-      where: {
-        username,
-        email,
-        provider: "catetin",
-      },
-    });
-    if (users) {
-      res.status(400).json({
-        message:
-          "Email and username combination has already been used. Please try again",
-      });
-      return;
-    }
-
-    const hash = await bcryptjs.hash(password, 10);
-    const { id } = await User.create({
-      username,
-      password: hash,
-      provider: "catetin",
-      email,
-      verified: false,
-    });
-
-    const token = signJWT(id);
-    const refreshToken = jwt.sign(
-      {
-        user_id: id,
-      },
-      config.server.token.REFRESH_TOKEN_SECRET,
-      {
-        expiresIn: "14d",
-      }
+    const promises = [];
+    promises.push(
+      User.findOne({
+        where: {
+          email,
+        },
+      })
     );
-    await RefreshToken.create({
-      token: refreshToken,
-      UserId: id,
-    });
+    promises.push(
+      User.findOne({
+        where: {
+          username,
+        },
+      })
+    );
+    let [emailData, usernameData] = await Promise.all(promises);
 
-    res.status(200).json({
-      message: "Auth Successful",
-      token,
-      refreshToken,
-      user_id: id,
+    emailData = JSON.parse(JSON.stringify(emailData));
+    usernameData = JSON.parse(JSON.stringify(usernameData));
+
+    if (!emailData && !usernameData) {
+      const hash = await bcryptjs.hash(password, 10);
+      const { id } = await User.create({
+        username,
+        password: hash,
+        provider: "catetin",
+        email,
+        verified: false,
+      });
+
+      const token = signJWT(id);
+      const refreshToken = jwt.sign(
+        {
+          user_id: id,
+        },
+        config.server.token.REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "14d",
+        }
+      );
+      await RefreshToken.create({
+        token: refreshToken,
+        UserId: id,
+      });
+
+      return res.status(200).send({
+        message: "Auth Successful",
+        token,
+        refreshToken,
+        user_id: id,
+      });
+    }
+    return res.status(400).send({
+      message: `Account already exists with ${
+        emailData && !usernameData
+          ? "this email"
+          : usernameData && !emailData
+          ? "this username"
+          : "this email and username"
+      }. Please log in with associated provider: ${
+        (emailData || usernameData).provider === "catetin"
+          ? "Manual Sign In"
+          : (emailData || usernameData).provider
+      }`,
     });
   } catch (error: any) {
     return res.status(500).json({
@@ -236,13 +256,15 @@ const loginFacebook = async (
   let { email, name } = req.body;
 
   try {
-    let signedId: number;
-    const users = await User.findOne({
-      where: {
-        email,
-        provider: "facebook",
-      },
-    });
+    const users = JSON.parse(
+      JSON.stringify(
+        await User.findOne({
+          where: {
+            email,
+          },
+        })
+      )
+    );
     if (!users) {
       const { id } = await User.create({
         email,
@@ -255,29 +277,53 @@ const loginFacebook = async (
         displayName: name,
         UserId: id,
       });
-      signedId = id;
-    } else {
-      signedId = users.dataValues.id;
+      const token = signJWT(id);
+      const refreshToken = jwt.sign(
+        {
+          user_id: id,
+        },
+        config.server.token.REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "14d",
+        }
+      );
+      await RefreshToken.create({
+        token: refreshToken,
+        UserId: id,
+      });
+      return res.status(200).json({
+        message: "Auth Successful",
+        token,
+        refreshToken,
+        user: id,
+      });
     }
-    const token = signJWT(signedId);
-    const refreshToken = jwt.sign(
-      {
-        user_id: signedId,
-      },
-      config.server.token.REFRESH_TOKEN_SECRET,
-      {
-        expiresIn: "14d",
-      }
-    );
-    await RefreshToken.create({
-      token: refreshToken,
-      UserId: signedId,
-    });
-    return res.status(200).json({
-      message: "Auth Successful",
-      token,
-      refreshToken,
-      user: signedId,
+    if (users.provider === "facebook") {
+      const token = signJWT(users.id);
+      const refreshToken = jwt.sign(
+        {
+          user_id: users.id,
+        },
+        config.server.token.REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "14d",
+        }
+      );
+      await RefreshToken.create({
+        token: refreshToken,
+        UserId: users.id,
+      });
+      return res.status(200).json({
+        message: "Auth Successful",
+        token,
+        refreshToken,
+        user: users.id,
+      });
+    }
+    return res.status(400).send({
+      message: `Account already exists. Please log in with associated provider: ${
+        users.provider === "catetin" ? "Manual Sign In" : users.provider
+      }`,
     });
   } catch (err: any) {
     return res.status(500).json({
