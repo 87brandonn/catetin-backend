@@ -318,25 +318,29 @@ export const generatePasswordResetNumber = async (
   req: Request,
   res: Response
 ) => {
+  const { email } = req.query;
   try {
-    const user_id = res.locals.jwt.user_id;
+    let userData = await User.findOne({
+      where: {
+        email,
+        provider: "catetin",
+      },
+    });
+    if (!userData) {
+      return res.status(400).send({
+        message: "There are no user associated with this email",
+      });
+    }
     const promises = [];
     promises.push(
       ResetPasswordNumber.create({
         unique_number: Math.floor(1000 + Math.random() * 9000),
         active: true,
-        UserId: user_id,
+        UserId: userData.id,
         expirationDate: moment().add("30", "minutes").toDate(),
       })
     );
-    promises.push(
-      User.findOne({
-        where: {
-          id: user_id,
-        },
-      })
-    );
-    let [resetPasswordData, userData] = await Promise.all(promises);
+    let [resetPasswordData] = await Promise.all(promises);
     resetPasswordData = JSON.parse(JSON.stringify(resetPasswordData));
     userData = JSON.parse(JSON.stringify(userData));
     await transporter.sendMail({
@@ -358,9 +362,20 @@ export const generatePasswordResetNumber = async (
 };
 
 export const verifyResetPassword = async (req: Request, res: Response) => {
-  const user_id = res.locals.jwt.user_id;
-  const { number } = req.body;
+  const { number, email } = req.body;
   try {
+    let userData = await User.findOne({
+      where: {
+        email,
+        provider: "catetin",
+      },
+    });
+    if (!userData) {
+      return res.status(400).send({
+        message: "There are no user associated with this email",
+      });
+    }
+    userData = JSON.parse(JSON.stringify(userData));
     const data = await ResetPasswordNumber.findOne({
       where: {
         unique_number: number,
@@ -368,7 +383,7 @@ export const verifyResetPassword = async (req: Request, res: Response) => {
         expirationDate: {
           [Op.gte]: moment().toDate(),
         },
-        UserId: user_id,
+        UserId: userData.id,
       },
     });
     if (!data) {
