@@ -11,7 +11,13 @@ import transporter from "../nodemailer";
 import config from "../config/config";
 
 const NAMESPACE = "User";
-const { User, Profile, VerificationEmailNumber, RefreshToken } = model;
+const {
+  User,
+  Profile,
+  VerificationEmailNumber,
+  ResetPasswordNumber,
+  RefreshToken,
+} = model;
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
   logging.info(NAMESPACE, "Token validated, user authorized.");
@@ -308,6 +314,95 @@ const updateProfile = async (
   }
 };
 
+export const generatePasswordResetNumber = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const user_id = res.locals.jwt.user_id;
+    const promises = [];
+    promises.push(
+      ResetPasswordNumber.create({
+        unique_number: Math.floor(1000 + Math.random() * 9000),
+        active: true,
+        UserId: user_id,
+        expirationDate: moment().add("30", "minutes").toDate(),
+      })
+    );
+    promises.push(
+      User.findOne({
+        where: {
+          id: user_id,
+        },
+      })
+    );
+    let [resetPasswordData, userData] = await Promise.all(promises);
+    resetPasswordData = JSON.parse(JSON.stringify(resetPasswordData));
+    userData = JSON.parse(JSON.stringify(userData));
+    await transporter.sendMail({
+      from: "brandonpardede25@gmail.com",
+      to: userData.email,
+      subject: "Password Reset",
+      html: `${resetPasswordData.unique_number} is your 4 digit reset password key for another 30 minutes. Thank you for using Catetin.`,
+    });
+    res.status(200).send({
+      message: "Succesfully send reset password key",
+    });
+  } catch (err) {
+    console.error("Failed to generate password reset number", err);
+    res.status(500).send({
+      message: "An error occured while generating password reset number",
+      err,
+    });
+  }
+};
+
+export const verifyResetPassword = async (req: Request, res: Response) => {
+  const user_id = res.locals.jwt.user_id;
+  const { number } = req.body;
+  try {
+    const data = await ResetPasswordNumber.findOne({
+      where: {
+        unique_number: number,
+        active: true,
+        expirationDate: {
+          [Op.gte]: moment().toDate(),
+        },
+        UserId: user_id,
+      },
+    });
+    if (!data) {
+      return res.status(403).send({
+        message: "ID have been revoked or might not exist. Please try again",
+      });
+    }
+    const promises = [];
+    promises.push(
+      VerificationEmailNumber.update(
+        {
+          active: false,
+        },
+        {
+          where: {
+            id: data.id,
+          },
+        }
+      )
+    );
+    const promisesData = await Promise.all(promises);
+    res.status(200).send({
+      data: promisesData,
+      message: "Succesfully authenticated",
+    });
+  } catch (err) {
+    console.error("Failed to verify number", err);
+    res.status(500).send({
+      message: "An error occured while verifying number",
+      err,
+    });
+  }
+};
+
 export const generateVerifyNumber = async (req: Request, res: Response) => {
   try {
     const user_id = res.locals.jwt.user_id;
@@ -515,6 +610,8 @@ export default {
   loginFacebook,
   login,
   generateVerifyNumber,
+  generatePasswordResetNumber,
+  verifyResetPassword,
   verifyEmailNumber,
   loginGmail,
   updateProfile,

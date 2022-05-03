@@ -7,6 +7,12 @@ router.post("/token", controller.getRefreshToken);
 router.get("/validate", extractJWT, controller.validateToken);
 router.post("/login/facebook", controller.loginFacebook);
 router.post("/login/gmail", controller.loginGmail);
+router.get(
+  "/reset-password",
+  extractJWT,
+  controller.generatePasswordResetNumber
+);
+router.post("/reset-password", extractJWT, controller.verifyResetPassword);
 router.get("/verify", extractJWT, controller.generateVerifyNumber);
 router.post("/verify", extractJWT, controller.verifyEmailNumber);
 router.post("/logout", controller.logout);
