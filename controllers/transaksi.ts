@@ -9,6 +9,8 @@ import { Op } from "sequelize";
 import { default as db, default as model } from "../models";
 import { bucket } from "./media";
 import transporter, { mailData } from "../nodemailer";
+import { ICatetinStore } from "../interfaces/store";
+import IUser from "../interfaces/user";
 
 const { Transaction, ItemTransaction, Item, Store, User } = model;
 
@@ -720,20 +722,6 @@ const getTransactionSummary = async (req: Request, res: Response) => {
 const downloadManualTransactions = async (req: Request, res: Response) => {
   const { start_date, end_date, store_id } = req.body;
   try {
-    const storeData = JSON.parse(
-      JSON.stringify(
-        await Store.findOne({
-          where: {
-            id: store_id,
-          },
-          include: [
-            {
-              model: User,
-            },
-          ],
-        })
-      )
-    );
     const from = moment(start_date).toISOString();
     const to = moment(end_date).toISOString();
     const query = {
@@ -747,10 +735,13 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
       deleted: false,
     };
 
-    let [transaction, income, outcome]: [
+    let [transaction, income, outcome, storeData]: [
       transaction: { type: string; total_amount: string }[],
       income: number | undefined,
-      outcome: number | undefined
+      outcome: number | undefined,
+      storeData: ICatetinStore & {
+        User: IUser;
+      }
     ] = await Promise.all([
       Transaction.findAll({
         where: {
@@ -774,11 +765,22 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
           ...query,
         },
       }),
+      Store.findOne({
+        where: {
+          id: store_id,
+        },
+        include: [
+          {
+            model: User,
+          },
+        ],
+      }),
     ]);
 
     transaction = JSON.parse(JSON.stringify(transaction));
     income = JSON.parse(JSON.stringify(income));
     outcome = JSON.parse(JSON.stringify(outcome));
+    storeData = JSON.parse(JSON.stringify(storeData));
 
     const impression = {
       value: Number(Math.abs((income || 0) - (outcome || 0))).toLocaleString(
