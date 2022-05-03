@@ -17,9 +17,9 @@ export default (sequelize: Sequelize, DataTypes: any) => {
   }
   User.init(
     {
-      username: { type: DataTypes.STRING, allowNull: false },
+      username: { type: DataTypes.STRING, allowNull: false, unique: true },
       password: { type: DataTypes.STRING, allowNull: false },
-      email: { type: DataTypes.STRING, allowNull: false },
+      email: { type: DataTypes.STRING, allowNull: false, unique: true },
       provider: {
         type: DataTypes.STRING,
         validate: {
@@ -39,12 +39,6 @@ export default (sequelize: Sequelize, DataTypes: any) => {
     {
       sequelize,
       modelName: "User",
-      indexes: [
-        {
-          unique: true,
-          fields: ["username", "email", "provider"],
-        },
-      ],
     }
   );
   return User;

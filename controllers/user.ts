@@ -151,13 +151,15 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
   let { email, name } = req.body;
 
   try {
-    let signedId: number;
-    const users = await User.findOne({
-      where: {
-        email,
-        provider: "google",
-      },
-    });
+    const users = JSON.parse(
+      JSON.stringify(
+        await User.findOne({
+          where: {
+            email,
+          },
+        })
+      )
+    );
     if (!users) {
       const { id } = await User.create({
         email,
@@ -170,29 +172,53 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
         displayName: name,
         UserId: id,
       });
-      signedId = id;
-    } else {
-      signedId = users.dataValues.id;
+      const token = signJWT(id);
+      const refreshToken = jwt.sign(
+        {
+          user_id: id,
+        },
+        config.server.token.REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "14d",
+        }
+      );
+      await RefreshToken.create({
+        token: refreshToken,
+        UserId: id,
+      });
+      return res.status(200).json({
+        message: "Auth Successful",
+        token,
+        refreshToken,
+        user: id,
+      });
     }
-    const token = signJWT(signedId);
-    const refreshToken = jwt.sign(
-      {
-        user_id: signedId,
-      },
-      config.server.token.REFRESH_TOKEN_SECRET,
-      {
-        expiresIn: "14d",
-      }
-    );
-    await RefreshToken.create({
-      token: refreshToken,
-      UserId: signedId,
-    });
-    return res.status(200).json({
-      message: "Auth Successful",
-      token,
-      refreshToken,
-      user: signedId,
+    if (users.provider === "google") {
+      const token = signJWT(users.id);
+      const refreshToken = jwt.sign(
+        {
+          user_id: users.id,
+        },
+        config.server.token.REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "14d",
+        }
+      );
+      await RefreshToken.create({
+        token: refreshToken,
+        UserId: users.id,
+      });
+      return res.status(200).json({
+        message: "Auth Successful",
+        token,
+        refreshToken,
+        user: users.id,
+      });
+    }
+    return res.status(400).send({
+      message: `Account already exists. Please log in with associated provider: ${
+        users.provider === "catetin" ? "Manual Sign In" : users.provider
+      }`,
     });
   } catch (err: any) {
     return res.status(500).json({
