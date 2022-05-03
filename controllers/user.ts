@@ -325,7 +325,12 @@ export const generatePasswordResetNumber = async (
   try {
     let userData = await User.findOne({
       where: {
-        email,
+        [Op.or]: [
+          {
+            email,
+          },
+          { username: email },
+        ],
         provider: "catetin",
       },
     });
@@ -353,6 +358,7 @@ export const generatePasswordResetNumber = async (
       html: `${resetPasswordData.unique_number} is your 4 digit reset password key for another 30 minutes. Thank you for using Catetin.`,
     });
     res.status(200).send({
+      data: userData.email,
       message: "Succesfully send reset password key",
     });
   } catch (err) {
