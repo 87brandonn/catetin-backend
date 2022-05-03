@@ -372,7 +372,7 @@ export const verifyResetPassword = async (req: Request, res: Response) => {
       },
     });
     if (!data) {
-      return res.status(403).send({
+      return res.status(400).send({
         message: "ID have been revoked or might not exist. Please try again",
       });
     }
@@ -460,7 +460,7 @@ export const verifyEmailNumber = async (req: Request, res: Response) => {
       },
     });
     if (!data) {
-      res.status(403).send({
+      res.status(400).send({
         message: "ID have been revoked or might not exist. Please try again",
       });
     } else {
