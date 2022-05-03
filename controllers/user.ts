@@ -378,7 +378,7 @@ export const verifyResetPassword = async (req: Request, res: Response) => {
     }
     const promises = [];
     promises.push(
-      VerificationEmailNumber.update(
+      ResetPasswordNumber.update(
         {
           active: false,
         },
