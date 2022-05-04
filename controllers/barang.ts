@@ -49,6 +49,7 @@ const insertBarang = async (
   const { id } = req.params;
 
   try {
+    let dataCategory = [];
     const data = JSON.parse(
       JSON.stringify(
         await Item.create({
@@ -60,12 +61,15 @@ const insertBarang = async (
         })
       )
     );
-    const dataCategory = await ItemItemCategory.bulkCreate(
-      category.map((cat: number) => ({
-        ItemId: data.id,
-        ItemCategoryId: cat,
-      }))
-    );
+    if (category) {
+      dataCategory = await ItemItemCategory.bulkCreate(
+        category.map((cat: number) => ({
+          ItemId: data.id,
+          ItemCategoryId: cat,
+        }))
+      );
+    }
+
     res.status(200).send({
       data: [data, dataCategory],
       message: "Succesfully insert barang",
