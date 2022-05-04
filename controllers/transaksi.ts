@@ -44,7 +44,7 @@ const insertTransaksi = async (req: Request, res: Response) => {
 };
 
 const insertTransaksiDetail = async (req: Request, res: Response) => {
-  const { transaksi_id, barang_id, amount } = req.body;
+  const { transaksi_id, barang_id, amount, price } = req.body;
   const promises = [];
 
   const {
@@ -57,17 +57,10 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
 
   try {
     if (type == 3 || type == 4) {
-      const {
-        dataValues: { price },
-      } = await Item.findOne({
-        where: {
-          id: barang_id,
-        },
-      });
-
       await ItemTransaction.create({
         amount,
         total: price * amount,
+        price,
         ItemId: barang_id,
         TransactionId: transaksi_id,
       });
@@ -202,7 +195,7 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
 };
 
 const updateTransaksiDetail = async (req: Request, res: Response) => {
-  const { transaksi_id, barang_id, amount } = req.body;
+  const { transaksi_id, barang_id, amount, price } = req.body;
   const promises = [];
 
   const {
@@ -267,17 +260,11 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
           )
         );
       }
-      const {
-        dataValues: { price },
-      } = await Item.findOne({
-        where: {
-          id: barang_id,
-        },
-      });
       await ItemTransaction.update(
         {
           amount,
           total: price * amount,
+          price,
         },
         {
           where: { ItemId: barang_id, TransactionId: transaksi_id },
