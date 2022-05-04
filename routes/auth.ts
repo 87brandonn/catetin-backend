@@ -11,7 +11,7 @@ router.get("/reset-password", controller.generatePasswordResetNumber);
 router.post("/reset-password", controller.verifyResetPassword);
 router.get("/verify", extractJWT, controller.generateVerifyNumber);
 router.post("/verify", extractJWT, controller.verifyEmailNumber);
-router.post("/logout", controller.logout);
+router.post("/logout", extractJWT, controller.logout);
 router.post("/login", controller.login);
 router.post("/register", controller.register);
 router.get("/profile", extractJWT, controller.getProfile);
