@@ -1,3 +1,4 @@
+import { ExpoPushMessage } from "expo-server-sdk";
 import { ICatetinTransaksi } from "./../interfaces/transaksi";
 import { getScheduleType } from "./index";
 import { ISchedulerUser } from "./../interfaces/scheduler";
@@ -12,6 +13,7 @@ import { bucket } from "../controllers/media";
 import jobs from "../cron";
 import { default as db, default as models } from "../models";
 import transporter, { mailData } from "../nodemailer";
+import { triggerPushNotification } from "./pushNotification";
 
 const { Transaction, Scheduler } = models;
 
@@ -21,6 +23,8 @@ export const triggerCron = async (
   storeName: string,
   schedule: ISchedulerUser
 ) => {
+  let messages: ExpoPushMessage[] = [];
+
   const indexFound = jobs.findIndex((job) => job.id === storeId);
   const currentDate = new Date();
 
@@ -137,6 +141,7 @@ export const triggerCron = async (
           );
           throw new Error(err);
         }
+        const promises = [];
         const fileName = `financial-report/LaporanKeuangan${storeId}-${data.storeName}-${data.from}-${data.to}.pdf`;
         const file = bucket.file(fileName);
 
@@ -149,18 +154,34 @@ export const triggerCron = async (
           `https://storage.googleapis.com/${bucket.name}/${fileName}`
         );
 
-        await transporter.sendMail({
-          from: "brandonpardede25@gmail.com",
-          to: email,
-          subject: "Laporan Keuangan Otomatis",
-          html: `Hi, ${email}. Berikut adalah laporan keuangan kamu untuk periode ini. Terimakasih telah menggunakan Catetin!`,
-          attachments: [
-            {
-              filename: fileName.replace("financial-report/", ""),
-              path: publicUrl,
-            },
-          ],
+        messages.push({
+          to: "ExponentPushToken[3P5XPmLtrMa63VL6-Sd0SH]",
+          sound: "default",
+          title: "Laporan Keuangan Otomatis",
+          body: "Laporan keuangan otomatis kamu untuk periode ini telah di kirim ke email brandonpardede24@gmail.com",
+          data: {
+            withSome: "data",
+          },
         });
+
+        promises.push(
+          transporter.sendMail({
+            from: "brandonpardede25@gmail.com",
+            to: email,
+            subject: "Laporan Keuangan Otomatis",
+            html: `Hi, ${email}. Berikut adalah laporan keuangan kamu untuk periode ini. Terimakasih telah menggunakan Catetin!`,
+            attachments: [
+              {
+                filename: fileName.replace("financial-report/", ""),
+                path: publicUrl,
+              },
+            ],
+          })
+        );
+
+        promises.push(triggerPushNotification(messages));
+
+        await Promise.all(promises);
 
         console.log(`Financial report has been sent to user ${email}`);
         jobs[indexFound].initDate = to;
