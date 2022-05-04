@@ -742,8 +742,7 @@ const getRefreshToken = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-  const { refreshToken, device_token_id } = req.body;
-  let user_id = res.locals?.jwt?.user_id;
+  const { refreshToken, device_token_id, user_id } = req.body;
 
   try {
     const promises = [];
