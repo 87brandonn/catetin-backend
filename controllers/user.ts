@@ -743,7 +743,7 @@ const getRefreshToken = async (req: Request, res: Response) => {
 
 export const logout = async (req: Request, res: Response) => {
   const { refreshToken, device_token_id } = req.body;
-  let user_id = res.locals.jwt.user_id;
+  let user_id = res.locals?.jwt?.user_id;
 
   try {
     const promises = [];
@@ -755,14 +755,20 @@ export const logout = async (req: Request, res: Response) => {
       })
     );
 
-    promises.push(
-      UserDeviceToken.destroy({
-        where: {
-          DeviceTokenId: device_token_id,
-          UserId: user_id,
-        },
-      })
-    );
+    /* This will handle destroying notification session for a user */
+
+    if (user_id) {
+      promises.push(
+        UserDeviceToken.destroy({
+          where: {
+            DeviceTokenId: device_token_id,
+            UserId: user_id,
+          },
+        })
+      );
+    }
+
+    /* End region */
 
     await Promise.all(promises);
 
