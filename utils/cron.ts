@@ -15,9 +15,10 @@ import { default as db, default as models } from "../models";
 import transporter, { mailData } from "../nodemailer";
 import { triggerPushNotification } from "./pushNotification";
 
-const { Transaction, Scheduler } = models;
+const { Transaction, Scheduler, UserDeviceToken, DeviceToken } = models;
 
 export const triggerCron = async (
+  userId: number,
   storeId: number,
   email: string,
   storeName: string,
@@ -154,14 +155,29 @@ export const triggerCron = async (
           `https://storage.googleapis.com/${bucket.name}/${fileName}`
         );
 
-        messages.push({
-          to: "ExponentPushToken[3P5XPmLtrMa63VL6-Sd0SH]",
-          sound: "default",
-          title: "Laporan Keuangan Otomatis",
-          body: "Laporan keuangan otomatis kamu untuk periode ini telah di kirim ke email brandonpardede24@gmail.com",
-          data: {
-            withSome: "data",
-          },
+        const deviceData = JSON.parse(
+          JSON.stringify(
+            await UserDeviceToken.findAll({
+              where: {
+                UserId: userId,
+                include: {
+                  model: DeviceToken,
+                },
+              },
+            })
+          )
+        );
+
+        deviceData.forEach((device: any) => {
+          messages.push({
+            to: device.DeviceToken.token,
+            sound: "default",
+            title: "Laporan Keuangan Otomatis",
+            body: `Laporan keuangan otomatis kamu untuk periode ini telah di kirim ke email ${email}`,
+            data: {
+              withSome: "data",
+            },
+          });
         });
 
         promises.push(

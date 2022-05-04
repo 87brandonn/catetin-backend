@@ -17,6 +17,8 @@ const {
   VerificationEmailNumber,
   ResetPasswordNumber,
   RefreshToken,
+  DeviceToken,
+  UserDeviceToken,
 } = model;
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
@@ -28,7 +30,7 @@ const validateToken = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
-  let { username, password, email } = req.body;
+  let { username, password, email, device_token_id } = req.body;
 
   try {
     const promises = [];
@@ -71,10 +73,20 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
           expiresIn: "14d",
         }
       );
-      await RefreshToken.create({
-        token: refreshToken,
-        UserId: id,
-      });
+
+      const promises = [];
+      promises.push(
+        UserDeviceToken.create({
+          DeviceTokenId: device_token_id,
+          UserId: id,
+        }),
+        RefreshToken.create({
+          token: refreshToken,
+          UserId: id,
+        })
+      );
+
+      await Promise.all(promises);
 
       return res.status(200).send({
         message: "Auth Successful",
@@ -105,7 +117,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const login = async (req: Request, res: Response, next: NextFunction) => {
-  let { username, password } = req.body;
+  let { username, password, device_token_id } = req.body;
 
   try {
     const users = await User.findOne({
@@ -145,10 +157,20 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
               expiresIn: "14d",
             }
           );
-          await RefreshToken.create({
-            token: refreshToken,
-            UserId: users.dataValues.id,
-          });
+          const promises = [];
+          promises.push(
+            UserDeviceToken.create({
+              DeviceTokenId: device_token_id,
+              UserId: users.dataValues.id,
+            }),
+            RefreshToken.create({
+              token: refreshToken,
+              UserId: users.dataValues.id,
+            })
+          );
+
+          await Promise.all(promises);
+
           return res.status(200).json({
             message: "Auth Successful",
             token,
@@ -167,7 +189,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
-  let { email, name } = req.body;
+  let { email, name, device_token_id } = req.body;
 
   try {
     const users = JSON.parse(
@@ -187,10 +209,7 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
         password: crypto.randomBytes(16).toString("hex"),
         verified: true,
       });
-      await Profile.create({
-        displayName: name,
-        UserId: id,
-      });
+
       const token = signJWT(id);
       const refreshToken = jwt.sign(
         {
@@ -201,10 +220,24 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
           expiresIn: "14d",
         }
       );
-      await RefreshToken.create({
-        token: refreshToken,
-        UserId: id,
-      });
+
+      const promises = [];
+      promises.push(
+        UserDeviceToken.create({
+          DeviceTokenId: device_token_id,
+          UserId: id,
+        }),
+        RefreshToken.create({
+          token: refreshToken,
+          UserId: id,
+        }),
+        Profile.create({
+          displayName: name,
+          UserId: id,
+        })
+      );
+      await Promise.all(promises);
+
       return res.status(200).json({
         message: "Auth Successful",
         token,
@@ -223,10 +256,21 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
           expiresIn: "14d",
         }
       );
-      await RefreshToken.create({
-        token: refreshToken,
-        UserId: users.id,
-      });
+
+      const promises = [];
+      promises.push(
+        UserDeviceToken.create({
+          DeviceTokenId: device_token_id,
+          UserId: users.id,
+        }),
+        RefreshToken.create({
+          token: refreshToken,
+          UserId: users.id,
+        })
+      );
+
+      await Promise.all(promises);
+
       return res.status(200).json({
         message: "Auth Successful",
         token,
@@ -252,7 +296,7 @@ const loginFacebook = async (
   res: Response,
   next: NextFunction
 ) => {
-  let { email, name } = req.body;
+  let { email, name, device_token_id } = req.body;
 
   try {
     const users = JSON.parse(
@@ -272,10 +316,7 @@ const loginFacebook = async (
         password: crypto.randomBytes(16).toString("hex"),
         verified: true,
       });
-      await Profile.create({
-        displayName: name,
-        UserId: id,
-      });
+
       const token = signJWT(id);
       const refreshToken = jwt.sign(
         {
@@ -286,10 +327,23 @@ const loginFacebook = async (
           expiresIn: "14d",
         }
       );
-      await RefreshToken.create({
-        token: refreshToken,
-        UserId: id,
-      });
+      const promises = [];
+      promises.push(
+        UserDeviceToken.create({
+          DeviceTokenId: device_token_id,
+          UserId: id,
+        }),
+        RefreshToken.create({
+          token: refreshToken,
+          UserId: id,
+        }),
+        Profile.create({
+          displayName: name,
+          UserId: id,
+        })
+      );
+      await Promise.all(promises);
+
       return res.status(200).json({
         message: "Auth Successful",
         token,
@@ -308,10 +362,19 @@ const loginFacebook = async (
           expiresIn: "14d",
         }
       );
-      await RefreshToken.create({
-        token: refreshToken,
-        UserId: users.id,
-      });
+      const promises = [];
+      promises.push(
+        UserDeviceToken.create({
+          DeviceTokenId: device_token_id,
+          UserId: users.id,
+        }),
+        RefreshToken.create({
+          token: refreshToken,
+          UserId: users.id,
+        })
+      );
+      await Promise.all(promises);
+
       return res.status(200).json({
         message: "Auth Successful",
         token,
@@ -679,13 +742,30 @@ const getRefreshToken = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
+  const { refreshToken, device_token_id } = req.body;
+  let user_id = res.locals.jwt.user_id;
+
   try {
-    await RefreshToken.destroy({
-      where: {
-        token: refreshToken,
-      },
-    });
+    const promises = [];
+    promises.push(
+      RefreshToken.destroy({
+        where: {
+          token: refreshToken,
+        },
+      })
+    );
+
+    promises.push(
+      UserDeviceToken.destroy({
+        where: {
+          DeviceTokenId: device_token_id,
+          UserId: user_id,
+        },
+      })
+    );
+
+    await Promise.all(promises);
+
     res.status(200).send({
       message: "Succesfully perform logout. Refresh token destroyed",
     });

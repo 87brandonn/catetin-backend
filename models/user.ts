@@ -13,6 +13,10 @@ export default (sequelize: Sequelize, DataTypes: any) => {
       User.hasMany(models.ResetPasswordNumber);
       User.hasMany(models.Store);
       User.hasMany(models.RefreshToken);
+      User.belongsToMany(models.DeviceToken, {
+        through: models.UserDeviceToken,
+      });
+      User.hasMany(models.UserDeviceToken);
     }
   }
   User.init(

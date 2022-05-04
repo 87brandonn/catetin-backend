@@ -106,6 +106,7 @@ const addScheduler = async (req: Request, res: Response) => {
           async () => {
             try {
               await triggerCron(
+                storeData.User.id,
                 storeData.id,
                 storeData.User.email,
                 storeData.name,
@@ -142,6 +143,7 @@ const addScheduler = async (req: Request, res: Response) => {
           async () => {
             try {
               await triggerCron(
+                storeData.User.id,
                 storeData.id,
                 storeData.User.email,
                 storeData.name,

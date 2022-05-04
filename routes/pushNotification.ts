@@ -4,6 +4,6 @@ import extractJWT from "../middleware/extractJWT";
 
 const router = express.Router();
 
-router.post("/", controller.triggerTestPushNotification);
+router.post("/register", controller.registerDevice);
 
 export default router;

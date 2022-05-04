@@ -48,6 +48,7 @@ const initJobs = async () => {
           async () => {
             try {
               await triggerCron(
+                schedule.Store.User.id,
                 schedule.Store.id,
                 schedule.Store.User.email,
                 schedule.Store.name,
