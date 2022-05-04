@@ -160,9 +160,9 @@ export const triggerCron = async (
             await UserDeviceToken.findAll({
               where: {
                 UserId: userId,
-                include: {
-                  model: DeviceToken,
-                },
+              },
+              include: {
+                model: DeviceToken,
               },
             })
           )
