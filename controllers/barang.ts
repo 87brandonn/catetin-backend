@@ -224,16 +224,12 @@ const getListBarang = async (
 const getBarangDetail = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { transaksi, category } = req.query;
-  const modelQuery: {
-    include: { model: any }[];
-  } = {
+  const modelQuery: any = {
     include: [],
   };
   if (transaksi) {
     modelQuery.include.push({
       model: Transaction,
-    });
-    Object.assign(modelQuery, {
       where: {
         deleted: false,
       },
