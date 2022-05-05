@@ -233,6 +233,7 @@ const getBarangDetail = async (req: Request, res: Response) => {
       where: {
         deleted: false,
       },
+      required: false,
     });
   }
   if (category) {
