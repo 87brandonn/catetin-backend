@@ -742,10 +742,22 @@ const getRefreshToken = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-  const { refreshToken, device_token_id, user_id } = req.body;
+  const { refreshToken, device_token_id } = req.body;
 
   try {
     const promises = [];
+    const refreshTokenData = await RefreshToken.findOne({
+      where: {
+        token: refreshToken,
+      },
+    });
+
+    if (!refreshTokenData) {
+      return res.status(400).send({
+        message: "No refresh token found for this user",
+      });
+    }
+
     promises.push(
       RefreshToken.destroy({
         where: {
@@ -756,16 +768,14 @@ export const logout = async (req: Request, res: Response) => {
 
     /* This will handle destroying notification session for a user */
 
-    if (user_id) {
-      promises.push(
-        UserDeviceToken.destroy({
-          where: {
-            DeviceTokenId: device_token_id,
-            UserId: user_id,
-          },
-        })
-      );
-    }
+    promises.push(
+      UserDeviceToken.destroy({
+        where: {
+          DeviceTokenId: device_token_id,
+          UserId: refreshTokenData.UserId,
+        },
+      })
+    );
 
     /* End region */
 
