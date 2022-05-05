@@ -190,6 +190,10 @@ const getListBarang = async (
       include: [
         {
           model: Transaction,
+          where: {
+            deleted: false,
+          },
+          required: false,
         },
         {
           model: ItemCategory,
