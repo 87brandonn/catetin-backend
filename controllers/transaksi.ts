@@ -1,17 +1,17 @@
-import { ICatetinTransaksiDetail } from "./../interfaces/transaksi";
 import { NextFunction, Request, Response } from "express";
-import handlebars from "handlebars";
 import fs from "fs";
+import handlebars from "handlebars";
 import pdf from "html-pdf";
 import moment from "moment-timezone";
-import { format } from "util";
 import path from "path";
 import { Op } from "sequelize";
-import { default as db, default as model } from "../models";
-import { bucket } from "./media";
-import transporter, { mailData } from "../nodemailer";
+import { format } from "util";
 import { ICatetinStore } from "../interfaces/store";
 import IUser from "../interfaces/user";
+import { default as db, default as model } from "../models";
+import transporter from "../nodemailer";
+import { ICatetinTransaksiDetail } from "./../interfaces/transaksi";
+import { bucket } from "./media";
 
 const { Transaction, ItemTransaction, Item, Store, User } = model;
 
@@ -45,7 +45,7 @@ const insertTransaksi = async (req: Request, res: Response) => {
 };
 
 const insertTransaksiDetail = async (req: Request, res: Response) => {
-  const { transaksi_id, barang_id, amount, price } = req.body;
+  const { transaksi_id, barang_id, amount, price, notes } = req.body;
   const promises = [];
 
   const {
@@ -64,6 +64,7 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
         price,
         ItemId: barang_id,
         TransactionId: transaksi_id,
+        notes,
       });
 
       const sumTotal = await ItemTransaction.sum("total", {
@@ -196,7 +197,7 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
 };
 
 const updateTransaksiDetail = async (req: Request, res: Response) => {
-  const { transaksi_id, barang_id, amount, price } = req.body;
+  const { transaksi_id, barang_id, amount, price, notes } = req.body;
   const promises = [];
 
   const {
@@ -266,6 +267,7 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
           amount,
           total: price * amount,
           price,
+          notes,
         },
         {
           where: { ItemId: barang_id, TransactionId: transaksi_id },

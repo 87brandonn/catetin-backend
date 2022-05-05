@@ -18,6 +18,7 @@ export default (sequelize: Sequelize, DataTypes: any) => {
       amount: DataTypes.INTEGER,
       total: DataTypes.INTEGER,
       price: DataTypes.INTEGER,
+      notes: DataTypes.STRING,
     },
     {
       sequelize,
