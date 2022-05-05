@@ -207,12 +207,6 @@ const getListBarang = async (
           ) === -1;
         return isNotIncludeTransaction;
       });
-      data = data.map((item) => {
-        item.Transactions = item.Transactions.filter(
-          (transaction) => !transaction.deleted
-        );
-        return item;
-      });
     }
 
     res.status(200).send({
@@ -238,6 +232,11 @@ const getBarangDetail = async (req: Request, res: Response) => {
   if (transaksi) {
     modelQuery.include.push({
       model: Transaction,
+    });
+    Object.assign(modelQuery, {
+      where: {
+        deleted: false,
+      },
     });
   }
   if (category) {
