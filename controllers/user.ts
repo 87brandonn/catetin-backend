@@ -708,6 +708,14 @@ export const updatePassword = async (req: Request, res: Response) => {
       )
     );
 
+    promises.push(
+      UserDeviceToken.destroy({
+        where: {
+          UserId: users.dataValues.id,
+        },
+      })
+    );
+
     await Promise.all(promises);
 
     return res.status(200).send({
