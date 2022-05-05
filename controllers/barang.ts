@@ -207,12 +207,12 @@ const getListBarang = async (
           ) === -1;
         return isNotIncludeTransaction;
       });
-      data = data.map((item) => ({
-        ...item,
-        Transactions: item.Transactions.filter(
+      data = data.map((item) => {
+        item.Transactions = item.Transactions.filter(
           (transaction) => !transaction.deleted
-        ),
-      }));
+        );
+        return item;
+      });
     }
 
     res.status(200).send({
