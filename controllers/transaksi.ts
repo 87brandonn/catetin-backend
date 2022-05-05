@@ -1,3 +1,4 @@
+import { ICatetinTransaksiDetail } from "./../interfaces/transaksi";
 import { NextFunction, Request, Response } from "express";
 import handlebars from "handlebars";
 import fs from "fs";
@@ -455,6 +456,42 @@ const deleteTransaksi = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const promises = [];
+
+    const transactionData = await Transaction.findOne({
+      where: {
+        id,
+      },
+      include: {
+        model: ItemTransaction,
+      },
+    });
+
+    if (!transactionData) {
+      return res.status(400).send({
+        message: "Transaction with this id is not exist",
+      });
+    }
+
+    if (transactionData.type === "3" || transactionData.type === "4") {
+      const transactionDataItemsPromises = transactionData.ItemTransactions.map(
+        (it: ICatetinTransaksiDetail) =>
+          Item.update(
+            {
+              stock: db.sequelize.literal(
+                `stock ${transactionData.type === "3" ? "+" : "-"} ${Math.abs(
+                  it.amount
+                )} `
+              ),
+            },
+            {
+              where: {
+                id: it.ItemId,
+              },
+            }
+          )
+      );
+      promises.push(...transactionDataItemsPromises);
+    }
 
     promises.push(
       Transaction.update(

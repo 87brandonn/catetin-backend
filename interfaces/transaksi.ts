@@ -13,6 +13,7 @@ export interface ICatetinTransaksi {
 }
 export interface ICatetinTransaksiDetail {
   amount: number;
+  price: number;
   total: number;
   deleted: boolean;
   createdAt: Date;
