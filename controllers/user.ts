@@ -696,11 +696,16 @@ export const updatePassword = async (req: Request, res: Response) => {
     );
 
     promises.push(
-      RefreshToken.destroy({
-        where: {
-          UserId: users.dataValues.id,
+      RefreshToken.update(
+        {
+          deleted: true,
         },
-      })
+        {
+          where: {
+            UserId: users.dataValues.id,
+          },
+        }
+      )
     );
 
     await Promise.all(promises);
@@ -722,6 +727,7 @@ const getRefreshToken = async (req: Request, res: Response) => {
   const data = await RefreshToken.findOne({
     where: {
       token: refreshToken,
+      deleted: false,
     },
   });
   if (!data) {
@@ -759,11 +765,14 @@ export const logout = async (req: Request, res: Response) => {
     }
 
     promises.push(
-      RefreshToken.destroy({
-        where: {
-          token: refreshToken,
-        },
-      })
+      RefreshToken.update(
+        { deleted: true },
+        {
+          where: {
+            token: refreshToken,
+          },
+        }
+      )
     );
 
     /* This will handle destroying notification session for a user */

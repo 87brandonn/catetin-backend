@@ -9,6 +9,7 @@ export default (sequelize: Sequelize, DataTypes: any) => {
   RefreshToken.init(
     {
       token: DataTypes.STRING,
+      deleted: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
     {
       sequelize,
