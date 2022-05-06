@@ -20,7 +20,7 @@ export default (sequelize: Sequelize, DataTypes: any) => {
     {
       name: DataTypes.STRING,
       picture: DataTypes.STRING,
-      deleted: DataTypes.BOOLEAN,
+      deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
     },
     {
       sequelize,
