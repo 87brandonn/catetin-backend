@@ -798,6 +798,7 @@ export const logout = async (req: Request, res: Response) => {
       message: "Succesfully perform logout. Refresh token destroyed",
     });
   } catch (err) {
+    console.error("Failed logging out", err);
     res.status(500).send({
       message: "Internal server error. Failed to perform logout.",
     });
