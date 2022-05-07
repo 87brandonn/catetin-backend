@@ -766,22 +766,18 @@ export const logout = async (req: Request, res: Response) => {
       },
     });
 
-    if (!refreshTokenData) {
-      return res.status(400).send({
-        message: "No refresh token found for this user",
-      });
+    if (refreshTokenData) {
+      promises.push(
+        RefreshToken.update(
+          { deleted: true },
+          {
+            where: {
+              token: refreshToken,
+            },
+          }
+        )
+      );
     }
-
-    promises.push(
-      RefreshToken.update(
-        { deleted: true },
-        {
-          where: {
-            token: refreshToken,
-          },
-        }
-      )
-    );
 
     /* This will handle destroying notification session for a user */
 
