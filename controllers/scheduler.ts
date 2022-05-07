@@ -165,6 +165,7 @@ const addScheduler = async (req: Request, res: Response) => {
       message: "Succesfully insert scheduler",
     });
   } catch (err) {
+    console.error(err, "Error adding schedule");
     res.status(400).send({
       message: "An error occured",
     });
