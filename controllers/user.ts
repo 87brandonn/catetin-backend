@@ -777,18 +777,17 @@ export const logout = async (req: Request, res: Response) => {
           }
         )
       );
+      promises.push(
+        UserDeviceToken.destroy({
+          where: {
+            DeviceTokenId: device_token_id,
+            UserId: refreshTokenData.UserId,
+          },
+        })
+      );
     }
 
     /* This will handle destroying notification session for a user */
-
-    promises.push(
-      UserDeviceToken.destroy({
-        where: {
-          DeviceTokenId: device_token_id,
-          UserId: refreshTokenData.UserId,
-        },
-      })
-    );
 
     /* End region */
 
