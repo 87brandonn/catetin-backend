@@ -598,6 +598,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       let data = await Item.findAll({
         where: {
           StoreId: id,
+          deleted: false,
         },
         attributes: {
           include: [
@@ -630,6 +631,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       let data = await Item.findAll({
         where: {
           StoreId: id,
+          deleted: false,
         },
         attributes: {
           include: [
