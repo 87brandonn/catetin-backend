@@ -596,6 +596,9 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     } else if (best_item) {
       let no_transaction = true;
       let data = await Item.findAll({
+        where: {
+          StoreId: id,
+        },
         attributes: {
           include: [
             [
@@ -605,8 +608,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                   WHERE
                     "iwt"."ItemId" = "Item"."id" AND 
                     "iwt"."type" = '3' AND 
-                    "iwt"."deleted" = false AND 
-                    "iwt"."StoreId" = ${id}
+                    "iwt"."deleted" = false 
                     ${dateQueryAsString} 
               )`),
               "total_nominal_transactions",
@@ -627,6 +629,9 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       let no_transaction = true;
       let data = await Item.findAll({
         attributes: {
+          where: {
+            StoreId: id,
+          },
           include: [
             [
               db.sequelize.literal(`(
@@ -635,7 +640,6 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                   WHERE
                     "iwt"."ItemId" = "Item"."id" AND 
                     "iwt"."deleted" = false AND
-                    "iwt"."StoreId" = ${id} AND
                     "iwt"."type" = '3' ${dateQueryAsString}
               )`),
               "total_amount_transactions",
