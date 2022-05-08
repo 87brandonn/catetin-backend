@@ -386,7 +386,7 @@ const getTransaksi = async (
         model: Item,
         ...includeQuery,
       },
-      order: [["updatedAt", "DESC"]],
+      order: [["transaction_date", "DESC"]],
     });
     return res
       .status(200)
