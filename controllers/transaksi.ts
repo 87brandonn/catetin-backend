@@ -628,10 +628,10 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     } else if (frequent_item) {
       let no_transaction = true;
       let data = await Item.findAll({
+        where: {
+          StoreId: id,
+        },
         attributes: {
-          where: {
-            StoreId: id,
-          },
           include: [
             [
               db.sequelize.literal(`(
