@@ -70,7 +70,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
         },
         config.server.token.REFRESH_TOKEN_SECRET,
         {
-          expiresIn: "2m",
+          expiresIn: "14d",
         }
       );
 
@@ -154,7 +154,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
             },
             config.server.token.REFRESH_TOKEN_SECRET,
             {
-              expiresIn: "2m",
+              expiresIn: "14d",
             }
           );
           const promises = [];
@@ -217,7 +217,7 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
         },
         config.server.token.REFRESH_TOKEN_SECRET,
         {
-          expiresIn: "2m",
+          expiresIn: "14d",
         }
       );
 
@@ -253,7 +253,7 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
         },
         config.server.token.REFRESH_TOKEN_SECRET,
         {
-          expiresIn: "2m",
+          expiresIn: "14d",
         }
       );
 
@@ -324,7 +324,7 @@ const loginFacebook = async (
         },
         config.server.token.REFRESH_TOKEN_SECRET,
         {
-          expiresIn: "2m",
+          expiresIn: "14d",
         }
       );
       const promises = [];
@@ -359,7 +359,7 @@ const loginFacebook = async (
         },
         config.server.token.REFRESH_TOKEN_SECRET,
         {
-          expiresIn: "2m",
+          expiresIn: "14d",
         }
       );
       const promises = [];
