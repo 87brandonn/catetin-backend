@@ -712,6 +712,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
           "rootType",
         ],
         group: ["date", "rootType"],
+        order: [[db.sequelize.col("date"), "DESC"]],
       });
       let grouped = {};
       const groups = ["date", "rootType"];
