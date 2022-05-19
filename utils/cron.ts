@@ -168,17 +168,19 @@ export const triggerCron = async (
           )
         );
 
-        // deviceData.forEach((device: any) => {
-        //   messages.push({
-        //     to: device.DeviceToken?.token,
-        //     sound: "default",
-        //     title: "Laporan Keuangan Otomatis",
-        //     body: `Laporan keuangan otomatis kamu untuk periode ini telah di kirim ke email ${email}`,
-        //     data: {
-        //       withSome: "data",
-        //     },
-        //   });
-        // });
+        deviceData.forEach((device: any) => {
+          if (device?.DeviceToken) {
+            messages.push({
+              to: device.DeviceToken?.token,
+              sound: "default",
+              title: "Laporan Keuangan Otomatis",
+              body: `Laporan keuangan otomatis kamu untuk periode ini telah di kirim ke email ${email}`,
+              data: {
+                withSome: "data",
+              },
+            });
+          }
+        });
 
         promises.push(
           transporter.sendMail({
@@ -195,7 +197,9 @@ export const triggerCron = async (
           })
         );
 
-        // promises.push(triggerPushNotification(messages));
+        if (messages.length) {
+          promises.push(triggerPushNotification(messages));
+        }
 
         await Promise.all(promises);
 
