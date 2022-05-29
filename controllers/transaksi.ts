@@ -89,7 +89,7 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
             )
           );
 
-          if (type == 3) {
+          if (type === "3") {
             promises.push(
               Item.update(
                 {
@@ -103,7 +103,7 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
               )
             );
           }
-          if (type == 4) {
+          if (type == "4") {
             promises.push(
               Item.update(
                 {
@@ -205,25 +205,23 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
   const { transaksi_id, barang_id, amount, price, notes } = req.body;
   const promises = [];
 
-  const {
-    dataValues: { type },
-  } = await Transaction.findOne({
+  const { type } = await Transaction.findOne({
     where: {
       id: transaksi_id,
     },
   });
 
   try {
-    if (type == 3 || type == 4) {
-      if (type == 3) {
-        const {
-          dataValues: { amount: amountTransactionItem },
-        } = await ItemTransaction.findOne({
-          where: {
-            ItemId: barang_id,
-            TransactionId: transaksi_id,
-          },
-        });
+    if (type === "3" || type === "4") {
+      if (type === "3") {
+        const { amount: amountTransactionItem } = await ItemTransaction.findOne(
+          {
+            where: {
+              ItemId: barang_id,
+              TransactionId: transaksi_id,
+            },
+          }
+        );
         const value = amount - amountTransactionItem;
         const prefix = value > 0 ? "-" : "+";
         promises.push(
@@ -241,15 +239,15 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
           )
         );
       }
-      if (type == 4) {
-        const {
-          dataValues: { amount: amountTransactionItem },
-        } = await ItemTransaction.findOne({
-          where: {
-            ItemId: barang_id,
-            TransactionId: transaksi_id,
-          },
-        });
+      if (type === "4") {
+        const { amount: amountTransactionItem } = await ItemTransaction.findOne(
+          {
+            where: {
+              ItemId: barang_id,
+              TransactionId: transaksi_id,
+            },
+          }
+        );
         const value = amount - amountTransactionItem;
         const prefix = value > 0 ? "+" : "-";
         promises.push(
