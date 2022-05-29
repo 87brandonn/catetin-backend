@@ -32,74 +32,6 @@ const insertTransaksi = async (req: Request, res: Response) => {
       notes,
     });
 
-    // let bulkPromises = [];
-
-    // if (tipe_transaksi === 3 || tipe_transaksi == 4) {
-    //   bulkPromises = await Promise.all(
-    //     barang.map(async ({ id, notes, amount, price }: any) => {
-    //       const promises = [];
-
-    //       await ItemTransaction.create({
-    //         amount,
-    //         total: price * amount,
-    //         price,
-    //         ItemId: id,
-    //         TransactionId: data.id,
-    //         notes,
-    //       });
-
-    //       const sumTotal = await ItemTransaction.sum("total", {
-    //         where: {
-    //           TransactionId: data.id,
-    //         },
-    //       });
-
-    //       promises.push(
-    //         Transaction.update(
-    //           {
-    //             nominal: sumTotal,
-    //           },
-    //           {
-    //             where: {
-    //               id: data.id,
-    //             },
-    //           }
-    //         )
-    //       );
-
-    //       if (tipe_transaksi == 3) {
-    //         promises.push(
-    //           Item.update(
-    //             {
-    //               stock: db.sequelize.literal(`stock - ${amount}`),
-    //             },
-    //             {
-    //               where: {
-    //                 id,
-    //               },
-    //             }
-    //           )
-    //         );
-    //       }
-    //       if (tipe_transaksi == 4) {
-    //         promises.push(
-    //           Item.update(
-    //             {
-    //               stock: db.sequelize.literal(`stock + ${amount}`),
-    //             },
-    //             {
-    //               where: {
-    //                 id,
-    //               },
-    //             }
-    //           )
-    //         );
-    //       }
-    //       return await Promise.all(promises);
-    //     })
-    //   );
-    // }
-
     res.send({
       data,
       message: "Succesfully insert transaction",
@@ -114,8 +46,7 @@ const insertTransaksi = async (req: Request, res: Response) => {
 };
 
 const insertTransaksiDetail = async (req: Request, res: Response) => {
-  const { transaksi_id, barang_id, amount, price, notes } = req.body;
-  const promises = [];
+  const { transaksi_id, barang = [] } = req.body;
 
   const {
     dataValues: { type },
@@ -126,67 +57,74 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
   });
 
   try {
-    if (type == 3 || type == 4) {
-      await ItemTransaction.create({
-        amount,
-        total: price * amount,
-        price,
-        ItemId: barang_id,
-        TransactionId: transaksi_id,
-        notes,
-      });
+    if (type === 3 || type == 4) {
+      let bulkPromises = [];
+      bulkPromises = await Promise.all(
+        barang.map(async ({ id, notes, amount, price }: any) => {
+          const promises = [];
 
-      const sumTotal = await ItemTransaction.sum("total", {
-        where: {
-          TransactionId: transaksi_id,
-        },
-      });
+          await ItemTransaction.create({
+            amount,
+            total: price * amount,
+            price,
+            ItemId: id,
+            TransactionId: transaksi_id,
+            notes,
+          });
 
-      promises.push(
-        Transaction.update(
-          {
-            nominal: sumTotal,
-          },
-          {
+          const sumTotal = await ItemTransaction.sum("total", {
             where: {
-              id: transaksi_id,
+              TransactionId: transaksi_id,
             },
-          }
-        )
-      );
+          });
 
-      if (type == 3) {
-        promises.push(
-          Item.update(
-            {
-              stock: db.sequelize.literal(`stock - ${amount}`),
-            },
-            {
-              where: {
-                id: barang_id,
+          promises.push(
+            Transaction.update(
+              {
+                nominal: sumTotal,
               },
-            }
-          )
-        );
-      }
-      if (type == 4) {
-        promises.push(
-          Item.update(
-            {
-              stock: db.sequelize.literal(`stock + ${amount}`),
-            },
-            {
-              where: {
-                id: barang_id,
-              },
-            }
-          )
-        );
-      }
-      const data = await Promise.all(promises);
-      return res.status(200).json({
-        data,
-        message: "Succesfully insert transaction detail",
+              {
+                where: {
+                  id: transaksi_id,
+                },
+              }
+            )
+          );
+
+          if (type == 3) {
+            promises.push(
+              Item.update(
+                {
+                  stock: db.sequelize.literal(`stock - ${amount}`),
+                },
+                {
+                  where: {
+                    id,
+                  },
+                }
+              )
+            );
+          }
+          if (type == 4) {
+            promises.push(
+              Item.update(
+                {
+                  stock: db.sequelize.literal(`stock + ${amount}`),
+                },
+                {
+                  where: {
+                    id,
+                  },
+                }
+              )
+            );
+          }
+          return await Promise.all(promises);
+        })
+      );
+      return res.send({
+        data: bulkPromises,
+        message: "Successfully insert transaction detail",
       });
     } else {
       return res.status(500).send({
