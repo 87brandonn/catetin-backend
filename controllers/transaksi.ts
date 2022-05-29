@@ -16,7 +16,7 @@ import { bucket } from "./media";
 const { Transaction, ItemTransaction, Item, Store, User } = model;
 
 const insertTransaksi = async (req: Request, res: Response) => {
-  let { title, tipe_transaksi, tanggal, total, notes } = req.body;
+  let { title, tipe_transaksi, tanggal, total, notes, barang = [] } = req.body;
 
   const { id } = req.params;
 
@@ -31,8 +31,77 @@ const insertTransaksi = async (req: Request, res: Response) => {
       type: tipe_transaksi,
       notes,
     });
+
+    let bulkPromises = [];
+
+    if (tipe_transaksi === 3 || tipe_transaksi == 4) {
+      bulkPromises = await Promise.all(
+        barang.map(async ({ id, notes, amount, price }: any) => {
+          const promises = [];
+
+          await ItemTransaction.create({
+            amount,
+            total: price * amount,
+            price,
+            ItemId: id,
+            TransactionId: data.id,
+            notes,
+          });
+
+          const sumTotal = await ItemTransaction.sum("total", {
+            where: {
+              TransactionId: data.id,
+            },
+          });
+
+          promises.push(
+            Transaction.update(
+              {
+                nominal: sumTotal,
+              },
+              {
+                where: {
+                  id: data.id,
+                },
+              }
+            )
+          );
+
+          if (tipe_transaksi == 3) {
+            promises.push(
+              Item.update(
+                {
+                  stock: db.sequelize.literal(`stock - ${amount}`),
+                },
+                {
+                  where: {
+                    id,
+                  },
+                }
+              )
+            );
+          }
+          if (tipe_transaksi == 4) {
+            promises.push(
+              Item.update(
+                {
+                  stock: db.sequelize.literal(`stock + ${amount}`),
+                },
+                {
+                  where: {
+                    id,
+                  },
+                }
+              )
+            );
+          }
+          return await Promise.all(promises);
+        })
+      );
+    }
+
     res.send({
-      data,
+      data: { ...data, barang: bulkPromises },
       message: "Succesfully insert transaction",
     });
   } catch (error: any) {
