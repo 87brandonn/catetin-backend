@@ -12,6 +12,10 @@ export default (sequelize: Sequelize, DataTypes: any) => {
       Transaction.belongsToMany(models.Item, {
         through: models.ItemTransaction,
       });
+      Transaction.belongsToMany(models.TransactionType, {
+        through: models.TransactionTransactionType,
+      });
+      Transaction.hasMany(models.TransactionTransactionType);
       Transaction.hasMany(models.ItemTransaction);
     }
   }
