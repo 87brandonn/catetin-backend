@@ -5,6 +5,7 @@ import mediaRouter from "./media";
 import schedulerRouter from "./scheduler";
 import transaksiRouter from "./transaksi";
 import itemCategoryRouter from "./itemCategory";
+import transactionTypeRouter from "./transactionType";
 import pushNotificationRouter from "./pushNotification";
 
 import storeRouter from "./store";
@@ -14,6 +15,7 @@ const routes = express.Router();
 routes.use("/auth", authRouter);
 routes.use("/barang", barangRouter);
 routes.use("/store", storeRouter);
+routes.use("/transaction-type", transactionTypeRouter);
 routes.use("/transaksi", transaksiRouter);
 routes.use("/item-category", itemCategoryRouter);
 routes.use("/media", mediaRouter);
