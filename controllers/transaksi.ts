@@ -16,7 +16,7 @@ import { bucket } from "./media";
 const { Transaction, ItemTransaction, Item, Store, User } = model;
 
 const insertTransaksi = async (req: Request, res: Response) => {
-  let { title, tipe_transaksi, tanggal, total, notes, barang = [] } = req.body;
+  let { title, tipe_transaksi, tanggal, total, notes } = req.body;
 
   const { id } = req.params;
 
@@ -32,76 +32,76 @@ const insertTransaksi = async (req: Request, res: Response) => {
       notes,
     });
 
-    let bulkPromises = [];
+    // let bulkPromises = [];
 
-    if (tipe_transaksi === 3 || tipe_transaksi == 4) {
-      bulkPromises = await Promise.all(
-        barang.map(async ({ id, notes, amount, price }: any) => {
-          const promises = [];
+    // if (tipe_transaksi === 3 || tipe_transaksi == 4) {
+    //   bulkPromises = await Promise.all(
+    //     barang.map(async ({ id, notes, amount, price }: any) => {
+    //       const promises = [];
 
-          await ItemTransaction.create({
-            amount,
-            total: price * amount,
-            price,
-            ItemId: id,
-            TransactionId: data.id,
-            notes,
-          });
+    //       await ItemTransaction.create({
+    //         amount,
+    //         total: price * amount,
+    //         price,
+    //         ItemId: id,
+    //         TransactionId: data.id,
+    //         notes,
+    //       });
 
-          const sumTotal = await ItemTransaction.sum("total", {
-            where: {
-              TransactionId: data.id,
-            },
-          });
+    //       const sumTotal = await ItemTransaction.sum("total", {
+    //         where: {
+    //           TransactionId: data.id,
+    //         },
+    //       });
 
-          promises.push(
-            Transaction.update(
-              {
-                nominal: sumTotal,
-              },
-              {
-                where: {
-                  id: data.id,
-                },
-              }
-            )
-          );
+    //       promises.push(
+    //         Transaction.update(
+    //           {
+    //             nominal: sumTotal,
+    //           },
+    //           {
+    //             where: {
+    //               id: data.id,
+    //             },
+    //           }
+    //         )
+    //       );
 
-          if (tipe_transaksi == 3) {
-            promises.push(
-              Item.update(
-                {
-                  stock: db.sequelize.literal(`stock - ${amount}`),
-                },
-                {
-                  where: {
-                    id,
-                  },
-                }
-              )
-            );
-          }
-          if (tipe_transaksi == 4) {
-            promises.push(
-              Item.update(
-                {
-                  stock: db.sequelize.literal(`stock + ${amount}`),
-                },
-                {
-                  where: {
-                    id,
-                  },
-                }
-              )
-            );
-          }
-          return await Promise.all(promises);
-        })
-      );
-    }
+    //       if (tipe_transaksi == 3) {
+    //         promises.push(
+    //           Item.update(
+    //             {
+    //               stock: db.sequelize.literal(`stock - ${amount}`),
+    //             },
+    //             {
+    //               where: {
+    //                 id,
+    //               },
+    //             }
+    //           )
+    //         );
+    //       }
+    //       if (tipe_transaksi == 4) {
+    //         promises.push(
+    //           Item.update(
+    //             {
+    //               stock: db.sequelize.literal(`stock + ${amount}`),
+    //             },
+    //             {
+    //               where: {
+    //                 id,
+    //               },
+    //             }
+    //           )
+    //         );
+    //       }
+    //       return await Promise.all(promises);
+    //     })
+    //   );
+    // }
 
     res.send({
-      data: { ...data, barang: bulkPromises },
+      data,
       message: "Succesfully insert transaction",
     });
   } catch (error: any) {
