@@ -48,9 +48,7 @@ const insertTransaksi = async (req: Request, res: Response) => {
 const insertTransaksiDetail = async (req: Request, res: Response) => {
   const { transaksi_id, barang = [] } = req.body;
 
-  const {
-    dataValues: { type },
-  } = await Transaction.findOne({
+  const { type } = await Transaction.findOne({
     where: {
       id: transaksi_id,
     },
