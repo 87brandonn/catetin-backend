@@ -54,10 +54,8 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
     },
   });
 
-  console.log(transaksi_id, type);
-
   try {
-    if (type === 3 || type == 4) {
+    if (type === "3" || type === "4") {
       let bulkPromises = [];
       bulkPromises = await Promise.all(
         barang.map(async ({ id, notes, amount, price }: any) => {
