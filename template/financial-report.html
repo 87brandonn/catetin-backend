@@ -564,14 +564,12 @@ Ensure the default browser behavior of the `hidden` attribute.
 
       <div class="mb-4">
         <div class="mt-4 text-2xl mb-1">Pendapatan</div>
-        <div class="pl-4 flex justify-between mb-1">
-          <div>Penjualan Barang</div>
-          <div>Rp {{ item_export }}</div>
-        </div>
-        <div class="pl-4 flex justify-between mb-1">
-          <div>Pemasukan lainnya</div>
-          <div>Rp {{ additional_income }}</div>
-        </div>
+        {{#each incomeReport}}
+          <div class="pl-4 flex justify-between mb-1">
+            <div>{{@key}}</div>
+            <div>Rp {{ toLocaleString this }}</div>
+          </div>
+        {{/each}}
         <div class="flex justify-between">
           <div class="font-semibold text-base">Total Pendapatan Kotor</div>
           <div class="font-bold">Rp {{ income }}</div>
@@ -580,14 +578,12 @@ Ensure the default browser behavior of the `hidden` attribute.
 
       <div class="mb-4">
         <div class="mt-4 text-2xl mb-1">Beban</div>
-        <div class="pl-4 flex justify-between mb-1">
-          <div>Pembelian Barang</div>
-          <div>{{ item_import }}</div>
-        </div>
-        <div class="pl-4 flex justify-between mb-1">
-          <div>Pengeluaran lainnya</div>
-          <div>{{ additional_outcome }}</div>
-        </div>
+        {{#each outcomeReport}}
+          <div class="pl-4 flex justify-between mb-1">
+            <div>{{@key}}</div>
+            <div>Rp {{ toLocaleString this }}</div>
+          </div>
+        {{/each}}
         <div class="flex justify-between">
           <div class="font-semibold text-base">Total Beban</div>
           <div class="font-bold">Rp {{ outcome }}</div>

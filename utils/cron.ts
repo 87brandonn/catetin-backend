@@ -1,3 +1,4 @@
+import { getTransactionReport } from "./transaction";
 import { ExpoPushMessage } from "expo-server-sdk";
 import { ICatetinTransaksi } from "./../interfaces/transaksi";
 import { getScheduleType } from "./index";
@@ -14,6 +15,11 @@ import jobs from "../cron";
 import { default as db, default as models } from "../models";
 import transporter, { mailData } from "../nodemailer";
 import { triggerPushNotification } from "./pushNotification";
+import { v1 } from "uuid";
+
+handlebars.registerHelper("toLocaleString", (number) => {
+  return (number || 0).toLocaleString("id-ID");
+});
 
 const { Transaction, Scheduler, UserDeviceToken, DeviceToken } = models;
 
@@ -45,19 +51,12 @@ export const triggerCron = async (
   };
 
   let [transaction, income, outcome]: [
-    transaction: { type: string; total_amount: string }[],
+    transaction: any,
     income: number | undefined,
     outcome: number | undefined
   ] = await Promise.all([
-    Transaction.findAll({
-      where: {
-        ...query,
-      },
-      attributes: [
-        "type",
-        [db.sequelize.fn("sum", db.sequelize.col("nominal")), "total_amount"],
-      ],
-      group: ["type"],
+    getTransactionReport(storeId, {
+      transaction_date: query.transaction_date,
     }),
     Transaction.sum("nominal", {
       where: {
@@ -91,22 +90,8 @@ export const triggerCron = async (
       .tz("Asia/Jakarta")
       .format("DD MMMM YYYY HH:mm"),
     to: moment(to).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY HH:mm"),
-    item_export: Number(
-      transaction?.find((eachTransaction) => eachTransaction.type === "3")
-        ?.total_amount || 0
-    )?.toLocaleString("id-ID"),
-    additional_income: Number(
-      transaction?.find((eachTransaction) => eachTransaction.type === "2")
-        ?.total_amount || 0
-    )?.toLocaleString("id-ID"),
-    item_import: Number(
-      transaction?.find((eachTransaction) => eachTransaction.type === "4")
-        ?.total_amount || 0
-    )?.toLocaleString("id-ID"),
-    additional_outcome: Number(
-      transaction?.find((eachTransaction) => eachTransaction.type === "1")
-        ?.total_amount || 0
-    )?.toLocaleString("id-ID"),
+    incomeReport: transaction.income,
+    outcomeReport: transaction.outcome,
     income: Number(income || 0).toLocaleString("id-ID"),
     outcome: Number(outcome || 0).toLocaleString("id-ID"),
     impression,
@@ -143,7 +128,9 @@ export const triggerCron = async (
           throw new Error(err);
         }
         const promises = [];
-        const fileName = `financial-report/LaporanKeuangan${storeId}-${data.storeName}-${data.from}-${data.to}.pdf`;
+        const fileName = `financial-report/LaporanKeuangan-${v1()}-${
+          data.storeName
+        }-${data.from}-${data.to}.pdf`;
         const file = bucket.file(fileName);
 
         await file.save(buffer, {

@@ -6,30 +6,51 @@ import moment from "moment-timezone";
 import path from "path";
 import { Op } from "sequelize";
 import { format } from "util";
+import { v1, v3 } from "uuid";
 import { ICatetinStore } from "../interfaces/store";
 import IUser from "../interfaces/user";
 import { default as db, default as model } from "../models";
 import transporter from "../nodemailer";
+import { getTransactionReport } from "../utils/transaction";
 import { ICatetinTransaksiDetail } from "./../interfaces/transaksi";
 import { bucket } from "./media";
 
-const { Transaction, ItemTransaction, Item, Store, User } = model;
+handlebars.registerHelper("toLocaleString", (number) => {
+  return (number || 0).toLocaleString("id-ID");
+});
+
+const {
+  Transaction,
+  ItemTransaction,
+  Item,
+  Store,
+  User,
+  TransactionTransactionType,
+  TransactionType,
+} = model;
 
 const insertTransaksi = async (req: Request, res: Response) => {
-  let { title, tipe_transaksi, tanggal, total, notes } = req.body;
+  let { title, tanggal, total, notes, transaksi_category, rootType } = req.body;
 
   const { id } = req.params;
 
   try {
-    const data = await Transaction.create({
+    let data = await Transaction.create({
       StoreId: id,
-      nominal: tipe_transaksi === 3 || tipe_transaksi === 4 ? 0 : total,
+      nominal:
+        transaksi_category === 19 || transaksi_category === 20 ? 0 : total,
+      rootType,
       transaction_date: tanggal,
-      rootType:
-        tipe_transaksi === 3 || tipe_transaksi === 2 ? "income" : "outcome",
       title,
-      type: tipe_transaksi,
+      type: null,
       notes,
+    });
+
+    data = JSON.parse(JSON.stringify(data));
+
+    await TransactionTransactionType.create({
+      TransactionId: data.id,
+      TransactionTypeId: transaksi_category,
     });
 
     res.send({
@@ -48,14 +69,22 @@ const insertTransaksi = async (req: Request, res: Response) => {
 const insertTransaksiDetail = async (req: Request, res: Response) => {
   const { transaksi_id, barang = [] } = req.body;
 
-  const { type } = await Transaction.findOne({
+  let transactionData = await TransactionTransactionType.findOne({
     where: {
-      id: transaksi_id,
+      TransactionId: transaksi_id,
+    },
+    include: {
+      model: TransactionType,
     },
   });
 
+  transactionData = JSON.parse(JSON.stringify(transactionData));
+
   try {
-    if (type === "3" || type === "4") {
+    if (
+      transactionData.TransactionType?.id === 19 ||
+      transactionData.TransactionType?.id === 20
+    ) {
       let bulkPromises = [];
       bulkPromises = await Promise.all(
         barang.map(async ({ id, notes, amount, price }: any) => {
@@ -89,7 +118,10 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
             )
           );
 
-          if (type === "3") {
+          /**
+           * Outcome transaction with barang
+           */
+          if (transactionData.TransactionType?.id === 19) {
             promises.push(
               Item.update(
                 {
@@ -102,8 +134,7 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
                 }
               )
             );
-          }
-          if (type == "4") {
+          } else if (transactionData.TransactionType?.id === 20) {
             promises.push(
               Item.update(
                 {
@@ -203,103 +234,101 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
 
 const updateTransaksiDetail = async (req: Request, res: Response) => {
   const { transaksi_id, barang_id, amount, price, notes } = req.body;
-  const promises = [];
 
-  const { type } = await Transaction.findOne({
+  let transactionData = await TransactionTransactionType.findOne({
     where: {
-      id: transaksi_id,
+      TransactionId: transaksi_id,
+    },
+    include: {
+      model: TransactionType,
     },
   });
 
+  transactionData = JSON.parse(JSON.stringify(transactionData));
+
   try {
-    if (type === "3" || type === "4") {
-      if (type === "3") {
-        const { amount: amountTransactionItem } = await ItemTransaction.findOne(
-          {
-            where: {
-              ItemId: barang_id,
-              TransactionId: transaksi_id,
-            },
-          }
-        );
-        const value = amount - amountTransactionItem;
-        const prefix = value > 0 ? "-" : "+";
-        promises.push(
-          Item.update(
-            {
-              stock: db.sequelize.literal(
-                `stock ${prefix} ${Math.abs(value)} `
-              ),
-            },
-            {
-              where: {
-                id: barang_id,
-              },
-            }
-          )
-        );
-      }
-      if (type === "4") {
-        const { amount: amountTransactionItem } = await ItemTransaction.findOne(
-          {
-            where: {
-              ItemId: barang_id,
-              TransactionId: transaksi_id,
-            },
-          }
-        );
-        const value = amount - amountTransactionItem;
-        const prefix = value > 0 ? "+" : "-";
-        promises.push(
-          Item.update(
-            {
-              stock: db.sequelize.literal(
-                `stock ${prefix} ${Math.abs(value)} `
-              ),
-            },
-            {
-              where: {
-                id: barang_id,
-              },
-            }
-          )
-        );
-      }
-      await ItemTransaction.update(
-        {
-          amount,
-          total: price * amount,
-          price,
-          notes,
-        },
-        {
-          where: { ItemId: barang_id, TransactionId: transaksi_id },
-        }
-      );
-      const sumTotal = await ItemTransaction.sum("total", {
+    const promises = [];
+    if (transactionData.TransactionType?.id === 19) {
+      const { amount: amountTransactionItem } = await ItemTransaction.findOne({
         where: {
+          ItemId: barang_id,
           TransactionId: transaksi_id,
         },
       });
-
+      const value = amount - amountTransactionItem;
+      const prefix = value > 0 ? "-" : "+";
       promises.push(
-        Transaction.update(
+        Item.update(
           {
-            nominal: sumTotal,
+            stock: db.sequelize.literal(`stock ${prefix} ${Math.abs(value)} `),
           },
           {
             where: {
-              id: transaksi_id,
+              id: barang_id,
             },
           }
         )
       );
-      const data = await Promise.all(promises);
-      return res.status(200).json({
-        data,
-        message: "Succesfully update transaction detail",
+    } else if (transactionData.TransactionType?.id === 20) {
+      const { amount: amountTransactionItem } = await ItemTransaction.findOne({
+        where: {
+          ItemId: barang_id,
+          TransactionId: transaksi_id,
+        },
+      });
+      const value = amount - amountTransactionItem;
+      const prefix = value > 0 ? "+" : "-";
+      promises.push(
+        Item.update(
+          {
+            stock: db.sequelize.literal(`stock ${prefix} ${Math.abs(value)} `),
+          },
+          {
+            where: {
+              id: barang_id,
+            },
+          }
+        )
+      );
+    } else {
+      return res.status(500).send({
+        message: "This type of transaction does not have detail",
       });
     }
+    await ItemTransaction.update(
+      {
+        amount,
+        total: price * amount,
+        price,
+        notes,
+      },
+      {
+        where: { ItemId: barang_id, TransactionId: transaksi_id },
+      }
+    );
+    const sumTotal = await ItemTransaction.sum("total", {
+      where: {
+        TransactionId: transaksi_id,
+      },
+    });
+
+    promises.push(
+      Transaction.update(
+        {
+          nominal: sumTotal,
+        },
+        {
+          where: {
+            id: transaksi_id,
+          },
+        }
+      )
+    );
+    const data = await Promise.all(promises);
+    return res.status(200).json({
+      data,
+      message: "Succesfully update transaction detail",
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).send({
@@ -308,11 +337,7 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
   }
 };
 
-const getTransaksi = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+const getTransaksi = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { search, items, nominal, start_date, end_date, type } = req.query;
 
@@ -385,10 +410,18 @@ const getTransaksi = async (
         deleted: false,
         ...additional,
       },
-      include: {
-        model: Item,
-        ...includeQuery,
-      },
+      include: [
+        {
+          model: Item,
+          ...includeQuery,
+        },
+        {
+          model: TransactionTransactionType,
+          include: {
+            model: TransactionType,
+          },
+        },
+      ],
       order: [["transaction_date", "DESC"]],
     });
     return res
@@ -410,9 +443,17 @@ const getTransaksiById = async (req: Request, res: Response) => {
       where: {
         id,
       },
-      include: {
-        model: Item,
-      },
+      include: [
+        {
+          model: Item,
+        },
+        {
+          model: TransactionTransactionType,
+          include: {
+            model: TransactionType,
+          },
+        },
+      ],
     });
     return res
       .status(200)
@@ -426,16 +467,18 @@ const getTransaksiById = async (req: Request, res: Response) => {
 };
 
 const updateTransaksi = async (req: Request, res: Response) => {
-  let { title, tipe_transaksi, tanggal, total, notes, transaksi_id } = req.body;
+  let { title, tanggal, total, notes, transaksi_id, transaksi_category } =
+    req.body;
 
   try {
     const data = await Transaction.update(
       {
         title,
-        type: tipe_transaksi,
         transaction_date: tanggal,
         nominal:
-          tipe_transaksi === 3 || tipe_transaksi === 4 ? undefined : total,
+          transaksi_category === 19 || transaksi_category === 20
+            ? undefined
+            : total,
         notes,
       },
       {
@@ -462,13 +505,18 @@ const deleteTransaksi = async (req: Request, res: Response) => {
   try {
     const promises = [];
 
-    const transactionData = await Transaction.findOne({
+    let transactionData = await Transaction.findOne({
       where: {
         id,
       },
-      include: {
-        model: ItemTransaction,
-      },
+      include: [
+        {
+          model: ItemTransaction,
+        },
+        {
+          model: TransactionType,
+        },
+      ],
     });
 
     if (!transactionData) {
@@ -477,15 +525,20 @@ const deleteTransaksi = async (req: Request, res: Response) => {
       });
     }
 
-    if (transactionData.type === "3" || transactionData.type === "4") {
+    transactionData = JSON.parse(JSON.stringify(transactionData));
+
+    if (
+      transactionData.TransactionTypes[0]?.id === 19 ||
+      transactionData.TransactionTypes[0]?.id === 20
+    ) {
       const transactionDataItemsPromises = transactionData.ItemTransactions.map(
         (it: ICatetinTransaksiDetail) =>
           Item.update(
             {
               stock: db.sequelize.literal(
-                `stock ${transactionData.type === "3" ? "+" : "-"} ${Math.abs(
-                  it.amount
-                )} `
+                `stock ${
+                  transactionData.TransactionTypes[0]?.id === 19 ? "+" : "-"
+                } ${Math.abs(it.amount)} `
               ),
             },
             {
@@ -535,6 +588,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     max_outcome,
     max_income,
     graph,
+    report,
     start_date,
     end_date,
     timezone = "Asia/Jakarta",
@@ -732,6 +786,13 @@ const getTransactionSummary = async (req: Request, res: Response) => {
         data: value,
       }));
       finalData = (mapGrouped.length > 0 && mapGrouped) || null;
+    } else if (report) {
+      finalData = await getTransactionReport(
+        id,
+        dateQuery as {
+          transaction_date: string;
+        }
+      );
     } else {
       const data = await Transaction.sum("nominal", {
         where: {
@@ -772,22 +833,15 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
     };
 
     let [transaction, income, outcome, storeData]: [
-      transaction: { type: string; total_amount: string }[],
+      transaction: any,
       income: number | undefined,
       outcome: number | undefined,
       storeData: ICatetinStore & {
         User: IUser;
       }
     ] = await Promise.all([
-      Transaction.findAll({
-        where: {
-          ...query,
-        },
-        attributes: [
-          "type",
-          [db.sequelize.fn("sum", db.sequelize.col("nominal")), "total_amount"],
-        ],
-        group: ["type"],
+      getTransactionReport(store_id, {
+        transaction_date: query.transaction_date,
       }),
       Transaction.sum("nominal", {
         where: {
@@ -825,26 +879,14 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
       profit: (income || 0) > (outcome || 0) ? true : false,
     };
 
+    console.log(transaction);
+
     const data = {
       storeName: storeData.name || "Catetin Toko",
       from: moment(from).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY"),
       to: moment(to).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY"),
-      item_export: Number(
-        transaction?.find((eachTransaction) => eachTransaction.type === "3")
-          ?.total_amount || 0
-      )?.toLocaleString("id-ID"),
-      additional_income: Number(
-        transaction?.find((eachTransaction) => eachTransaction.type === "2")
-          ?.total_amount || 0
-      )?.toLocaleString("id-ID"),
-      item_import: Number(
-        transaction?.find((eachTransaction) => eachTransaction.type === "4")
-          ?.total_amount || 0
-      )?.toLocaleString("id-ID"),
-      additional_outcome: Number(
-        transaction?.find((eachTransaction) => eachTransaction.type === "1")
-          ?.total_amount || 0
-      )?.toLocaleString("id-ID"),
+      incomeReport: transaction.income,
+      outcomeReport: transaction.outcome,
       income: Number(income || 0).toLocaleString("id-ID"),
       outcome: Number(outcome || 0).toLocaleString("id-ID"),
       impression,
@@ -866,7 +908,9 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
             message: "An error occured while generating PDF buffer",
           });
         }
-        const fileName = `financial-report/LaporanKeuangan${store_id}-${data.storeName}-${data.from}-${data.to}.pdf`;
+        const fileName = `financial-report/LaporanKeuangan-${v1()}-${
+          data.storeName
+        }-${data.from}-${data.to}.pdf`;
         const file = bucket.file(fileName);
 
         await file.save(buffer, {

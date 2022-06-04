@@ -7,7 +7,7 @@ const { TransactionType } = models;
 
 const getTransactionType = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name } = req.query;
+  const { name, type } = req.query;
 
   const additionalQuery = {};
   if (name) {
@@ -15,6 +15,11 @@ const getTransactionType = async (req: Request, res: Response) => {
       name: {
         [Op.like]: `%${name}%`,
       },
+    });
+  }
+  if (type) {
+    Object.assign(additionalQuery, {
+      rootType: type,
     });
   }
   try {
@@ -28,17 +33,18 @@ const getTransactionType = async (req: Request, res: Response) => {
             StoreId: id,
           },
         ],
+        deleted: false,
         ...additionalQuery,
       },
       order: [["name", "ASC"]],
     });
     res.status(200).send({
       data: responseData,
-      message: "Succesfully insert transaction type",
+      message: "Succesfully get transaction type",
     });
   } catch (err) {
     res.status(500).send({
-      message: "Failed to insert transaction type",
+      message: "Failed to get transaction type",
     });
   }
 };
@@ -51,9 +57,40 @@ const insertTransactionTypeGlobal = async (
   let data: ICatetinItemCategory[] = req.body;
 
   try {
-    const responseData = await TransactionType.bulkCreate(
-      data.map((category) => ({ ...category, global: true, StoreId: null }))
+    const responseData = await Promise.all(
+      data.map((category) =>
+        TransactionType.create({
+          ...category,
+          global: true,
+          StoreId: null,
+        })
+      )
     );
+    res.status(200).send({
+      data: responseData,
+      message: "Succesfully insert transaction type",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({
+      message: "Failed to insert transaction type",
+    });
+  }
+};
+
+const insertTransactionType = async (req: Request, res: Response) => {
+  const { id: storeId } = req.params;
+  let { id, name, picture, rootType } = req.body;
+
+  try {
+    const responseData = await TransactionType.upsert({
+      id,
+      name,
+      picture,
+      StoreId: storeId,
+      global: false,
+      rootType,
+    });
     res.status(200).send({
       data: responseData,
       message: "Succesfully insert transaction type",
@@ -65,22 +102,20 @@ const insertTransactionTypeGlobal = async (
   }
 };
 
-const insertTransactionType = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+const deleteTransactionType = async (req: Request, res: Response) => {
   const { id } = req.params;
-  let { name, picture, rootType } = req.body;
 
   try {
-    const responseData = await TransactionType.create({
-      name,
-      picture,
-      StoreId: id,
-      global: false,
-      rootType,
-    });
+    const responseData = await TransactionType.update(
+      {
+        deleted: true,
+      },
+      {
+        where: {
+          id,
+        },
+      }
+    );
     res.status(200).send({
       data: responseData,
       message: "Succesfully insert transaction type",
@@ -96,4 +131,5 @@ export default {
   insertTransactionType,
   getTransactionType,
   insertTransactionTypeGlobal,
+  deleteTransactionType,
 };
