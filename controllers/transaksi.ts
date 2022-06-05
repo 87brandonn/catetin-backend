@@ -192,8 +192,8 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
 
     if (
       !(
-        data.Transaction.TransactionType[0]?.id === 19 ||
-        data.Transaction.TransactionType[0]?.id === 20
+        data.Transaction.TransactionTypes[0]?.id === 19 ||
+        data.Transaction.TransactionTypes[0]?.id === 20
       )
     ) {
       return res.status(400).send({
@@ -218,7 +218,7 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
         {
           stock: db.sequelize.literal(
             `stock ${
-              data.Transaction.TransactionType[0]?.id === 20 ? "-" : "+"
+              data.Transaction.TransactionTypes[0]?.id === 20 ? "-" : "+"
             } ${data.amount}`
           ),
         },
