@@ -112,14 +112,18 @@ const updateBarang = async (
         },
       })
     );
-    promises.push(
-      ItemItemCategory.bulkCreate(
-        category.map((cat: number) => ({
-          ItemId: id,
-          ItemCategoryId: cat,
-        }))
-      )
-    );
+
+    if (category?.length) {
+      promises.push(
+        ItemItemCategory.bulkCreate(
+          category.map((cat: number) => ({
+            ItemId: id,
+            ItemCategoryId: cat,
+          }))
+        )
+      );
+    }
+
     const data = await Promise.all(promises);
     res.status(200).send({
       data,
