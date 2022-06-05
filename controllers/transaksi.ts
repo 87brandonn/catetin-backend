@@ -397,7 +397,7 @@ const getTransaksi = async (req: Request, res: Response) => {
   }
   if (type) {
     Object.assign(additional, {
-      type: {
+      rootType: {
         [Op.in]: type,
       },
     });
