@@ -182,10 +182,25 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
           },
           include: {
             model: Transaction,
+            include: {
+              model: TransactionType,
+            },
           },
         })
       )
     );
+
+    if (
+      !(
+        data.Transaction.TransactionType[0]?.id === 19 ||
+        data.Transaction.TransactionType[0]?.id === 20
+      )
+    ) {
+      return res.status(400).send({
+        message: "False transaction type",
+      });
+    }
+
     promises.push(
       Transaction.update(
         {
@@ -202,7 +217,9 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
       Item.update(
         {
           stock: db.sequelize.literal(
-            `stock ${data.Transaction.type === "4" ? "-" : "+"} ${data.amount}`
+            `stock ${
+              data.Transaction.TransactionType[0]?.id === 20 ? "-" : "+"
+            } ${data.amount}`
           ),
         },
         {
@@ -665,7 +682,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                   FROM (SELECT * FROM "ItemTransactions" INNER JOIN "Transactions" ON "Transactions"."id" = "ItemTransactions"."TransactionId") AS "iwt"
                   WHERE
                     "iwt"."ItemId" = "Item"."id" AND 
-                    "iwt"."type" = '3' AND 
+                    "iwt"."rootType" = 'income' AND 
                     "iwt"."deleted" = false 
                     ${dateQueryAsString} 
               )`),
@@ -699,7 +716,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
                   WHERE
                     "iwt"."ItemId" = "Item"."id" AND 
                     "iwt"."deleted" = false AND
-                    "iwt"."type" = '3' ${dateQueryAsString}
+                    "iwt"."rootType" = 'income' ${dateQueryAsString}
               )`),
               "total_amount_transactions",
             ],
