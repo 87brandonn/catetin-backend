@@ -5,7 +5,8 @@ import models from "../models";
 import * as XLSX from "xlsx";
 import { getOrderQuery } from "./../utils/index";
 
-const { Item, Transaction, ItemItemCategory, ItemCategory } = models;
+const { Item, Transaction, ItemItemCategory, ItemCategory, ItemVariants } =
+  models;
 
 const importCSV = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
@@ -40,12 +41,8 @@ const importCSV = async (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
-const insertBarang = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  let { name, price, picture, stock = 0, category } = req.body;
+const insertBarang = async (req: Request, res: Response) => {
+  let { name, price, picture, stock = 0, category, variants } = req.body;
   const { id } = req.params;
 
   try {
@@ -67,6 +64,28 @@ const insertBarang = async (
           ItemId: data.id,
           ItemCategoryId: cat,
         }))
+      );
+    }
+
+    if (variants?.length) {
+      await Promise.all(
+        variants.map(
+          async (variant: {
+            id: number;
+            quantity: number;
+            price: number;
+            name: string;
+          }) => {
+            const variantData = await ItemVariants.create({
+              ItemId: data.id,
+              ItemOptionId: variant.id,
+              quantity: variant.quantity,
+              price: variant.price,
+              name: variant.name,
+            });
+            return variantData;
+          }
+        )
       );
     }
 

@@ -1,51 +1,48 @@
-import { groupBy } from ".";
-import { default as model } from "../models";
+import { Op } from "sequelize";
+import { default as model, default as db } from "../models";
 
-const { Transaction, TransactionType } = model;
+const { Transaction, TransactionType, TransactionTransactionType } = model;
 
 export const getTransactionReport = async (
   id: string | number,
-  dateQuery: {
-    transaction_date: any;
-  }
+  dateQuery: any
 ) => {
-  let data = await Transaction.findAll({
+  const data = await TransactionType.findAll({
     where: {
-      StoreId: id,
+      [Op.or]: [
+        {
+          global: true,
+        },
+        {
+          StoreId: id,
+        },
+      ],
       deleted: false,
-      ...dateQuery,
+    },
+    attributes: {
+      include: [
+        [
+          db.sequelize.fn(
+            "sum",
+            db.sequelize.col("TransactionTransactionTypes.Transaction.nominal")
+          ),
+          "transactionSum",
+        ],
+      ],
     },
     include: {
-      model: TransactionType,
-      where: {
-        deleted: false,
-      },
-      through: {
+      model: TransactionTransactionType,
+      attributes: [],
+      include: {
+        model: Transaction,
+        where: {
+          deleted: false,
+          ...dateQuery,
+        },
         attributes: [],
       },
     },
+    group: ["TransactionType.id"],
   });
-  data = JSON.parse(JSON.stringify(data))
-    .filter((transaction: any) => !!transaction.TransactionTypes[0]?.name)
-    .map((transaction: any) => ({
-      ...transaction,
-      TransactionTypes: transaction.TransactionTypes[0]?.name,
-    }));
-  let groupedRootType = {};
-  Object.entries(groupBy(data, "rootType")).forEach(([key, value]: any) => {
-    const groupedCategory = {};
-    Object.entries(groupBy(value, "TransactionTypes")).forEach(
-      ([typeKey, typeValue]: any) => {
-        let sum = 0;
-        typeValue.forEach((data: any) => (sum += data.nominal));
-        Object.assign(groupedCategory, {
-          [typeKey]: sum,
-        });
-      }
-    );
-    Object.assign(groupedRootType, {
-      [key]: groupedCategory,
-    });
-  });
-  return groupedRootType;
+  return data;
 };

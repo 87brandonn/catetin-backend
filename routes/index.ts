@@ -5,6 +5,8 @@ import mediaRouter from "./media";
 import schedulerRouter from "./scheduler";
 import transaksiRouter from "./transaksi";
 import itemCategoryRouter from "./itemCategory";
+import itemOptionRouter from "./itemOption";
+import paymentMethodRouter from "./paymentMethod";
 import transactionTypeRouter from "./transactionType";
 import pushNotificationRouter from "./pushNotification";
 
@@ -17,6 +19,8 @@ routes.use("/barang", barangRouter);
 routes.use("/store", storeRouter);
 routes.use("/transaction-type", transactionTypeRouter);
 routes.use("/transaksi", transaksiRouter);
+routes.use("/item-option", itemOptionRouter);
+routes.use("/payment-method", paymentMethodRouter);
 routes.use("/item-category", itemCategoryRouter);
 routes.use("/media", mediaRouter);
 routes.use("/push-notification", pushNotificationRouter);

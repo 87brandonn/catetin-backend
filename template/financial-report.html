@@ -566,8 +566,8 @@ Ensure the default browser behavior of the `hidden` attribute.
         <div class="mt-4 text-2xl mb-1">Pendapatan</div>
         {{#each incomeReport}}
           <div class="pl-4 flex justify-between mb-1">
-            <div>{{@key}}</div>
-            <div>Rp {{ toLocaleString this }}</div>
+            <div>{{name}}</div>
+            <div>Rp {{ toLocaleString transactionSum }}</div>
           </div>
         {{/each}}
         <div class="flex justify-between">
@@ -580,8 +580,8 @@ Ensure the default browser behavior of the `hidden` attribute.
         <div class="mt-4 text-2xl mb-1">Beban</div>
         {{#each outcomeReport}}
           <div class="pl-4 flex justify-between mb-1">
-            <div>{{@key}}</div>
-            <div>Rp {{ toLocaleString this }}</div>
+            <div>{{name}}</div>
+            <div>Rp {{ toLocaleString transactionSum }}</div>
           </div>
         {{/each}}
         <div class="flex justify-between">

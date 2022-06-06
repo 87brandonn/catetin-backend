@@ -18,7 +18,7 @@ import { triggerPushNotification } from "./pushNotification";
 import { v1 } from "uuid";
 
 handlebars.registerHelper("toLocaleString", (number) => {
-  return (number || 0).toLocaleString("id-ID");
+  return parseInt(number || "0", 10).toLocaleString("id-ID");
 });
 
 const { Transaction, Scheduler, UserDeviceToken, DeviceToken } = models;
@@ -90,8 +90,12 @@ export const triggerCron = async (
       .tz("Asia/Jakarta")
       .format("DD MMMM YYYY HH:mm"),
     to: moment(to).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY HH:mm"),
-    incomeReport: transaction.income,
-    outcomeReport: transaction.outcome,
+    incomeReport: transaction?.filter(
+      (data: any) => data.rootType === "income"
+    ),
+    outcomeReport: transaction?.filter(
+      (data: any) => data.rootType === "outcome"
+    ),
     income: Number(income || 0).toLocaleString("id-ID"),
     outcome: Number(outcome || 0).toLocaleString("id-ID"),
     impression,

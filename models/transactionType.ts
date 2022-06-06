@@ -10,9 +10,6 @@ export default (sequelize: Sequelize, DataTypes: any) => {
     static associate(models: any) {
       // define association here
       TransactionType.belongsTo(models.Store);
-      TransactionType.belongsToMany(models.Transaction, {
-        through: models.TransactionTransactionType,
-      });
       TransactionType.hasMany(models.TransactionTransactionType);
     }
   }

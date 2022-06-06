@@ -11,12 +11,13 @@ import { ICatetinStore } from "../interfaces/store";
 import IUser from "../interfaces/user";
 import { default as db, default as model } from "../models";
 import transporter from "../nodemailer";
+import { groupBy } from "../utils";
 import { getTransactionReport } from "../utils/transaction";
 import { ICatetinTransaksiDetail } from "./../interfaces/transaksi";
 import { bucket } from "./media";
 
 handlebars.registerHelper("toLocaleString", (number) => {
-  return (number || 0).toLocaleString("id-ID");
+  return parseInt(number || "0", 10).toLocaleString("id-ID");
 });
 
 const {
@@ -27,10 +28,20 @@ const {
   User,
   TransactionTransactionType,
   TransactionType,
+  TransactionPaymentMethod,
+  PaymentMethod,
 } = model;
 
 const insertTransaksi = async (req: Request, res: Response) => {
-  let { title, tanggal, total, notes, transaksi_category, rootType } = req.body;
+  let {
+    title,
+    tanggal,
+    total,
+    notes,
+    transaksi_category,
+    rootType,
+    paymentMethod,
+  } = req.body;
 
   const { id } = req.params;
 
@@ -48,14 +59,25 @@ const insertTransaksi = async (req: Request, res: Response) => {
 
     data = JSON.parse(JSON.stringify(data));
 
-    await TransactionTransactionType.create({
-      TransactionId: data.id,
-      TransactionTypeId: transaksi_category,
-    });
+    const additionalPromise = [
+      TransactionTransactionType.create({
+        TransactionId: data.id,
+        TransactionTypeId: transaksi_category,
+      }),
+    ];
+
+    if (paymentMethod) {
+      additionalPromise.push(
+        TransactionPaymentMethod.create({
+          TransactionId: data.id,
+          PaymentMethodId: paymentMethod,
+        })
+      );
+    }
 
     res.send({
       data,
-      message: "Succesfully insert transaction",
+      message: "Succesfully insert transactions",
     });
   } catch (error: any) {
     console.log(error);
@@ -73,17 +95,14 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
     where: {
       TransactionId: transaksi_id,
     },
-    include: {
-      model: TransactionType,
-    },
   });
 
   transactionData = JSON.parse(JSON.stringify(transactionData));
 
   try {
     if (
-      transactionData.TransactionType?.id === 19 ||
-      transactionData.TransactionType?.id === 20
+      transactionData?.TransactionTypeId === 19 ||
+      transactionData?.TransactionTypeId === 20
     ) {
       let bulkPromises = [];
       bulkPromises = await Promise.all(
@@ -121,7 +140,7 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
           /**
            * Outcome transaction with barang
            */
-          if (transactionData.TransactionType?.id === 19) {
+          if (transactionData?.TransactionTypeId === 19) {
             promises.push(
               Item.update(
                 {
@@ -134,7 +153,7 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
                 }
               )
             );
-          } else if (transactionData.TransactionType?.id === 20) {
+          } else if (transactionData?.TransactionTypeId === 20) {
             promises.push(
               Item.update(
                 {
@@ -173,27 +192,27 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
   const promises = [];
 
   try {
-    const data = JSON.parse(
-      JSON.stringify(
-        await ItemTransaction.findOne({
-          where: {
-            ItemId: barang_id,
-            TransactionId: transaksi_id,
-          },
-          include: {
-            model: Transaction,
-            include: {
-              model: TransactionType,
-            },
-          },
-        })
-      )
-    );
+    let [barangData, transactionData] = await Promise.all([
+      ItemTransaction.findOne({
+        where: {
+          ItemId: barang_id,
+          TransactionId: transaksi_id,
+        },
+      }),
+      TransactionTransactionType.findOne({
+        where: {
+          TransactionId: transaksi_id,
+        },
+      }),
+    ]);
+
+    transactionData = JSON.parse(JSON.stringify(transactionData));
+    barangData = JSON.parse(JSON.stringify(barangData));
 
     if (
       !(
-        data.Transaction.TransactionTypes[0]?.id === 19 ||
-        data.Transaction.TransactionTypes[0]?.id === 20
+        transactionData?.TransactionTypeId === 19 ||
+        transactionData?.TransactionTypeId === 20
       )
     ) {
       return res.status(400).send({
@@ -204,7 +223,7 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
     promises.push(
       Transaction.update(
         {
-          nominal: db.sequelize.literal(`nominal - ${data.total} `),
+          nominal: db.sequelize.literal(`nominal - ${barangData.total} `),
         },
         {
           where: {
@@ -217,9 +236,9 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
       Item.update(
         {
           stock: db.sequelize.literal(
-            `stock ${
-              data.Transaction.TransactionTypes[0]?.id === 20 ? "-" : "+"
-            } ${data.amount}`
+            `stock ${transactionData?.TransactionTypeId === 20 ? "-" : "+"} ${
+              barangData.amount
+            }`
           ),
         },
         {
@@ -256,16 +275,13 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
     where: {
       TransactionId: transaksi_id,
     },
-    include: {
-      model: TransactionType,
-    },
   });
 
   transactionData = JSON.parse(JSON.stringify(transactionData));
 
   try {
     const promises = [];
-    if (transactionData.TransactionType?.id === 19) {
+    if (transactionData?.TransactionTypeId === 19) {
       const { amount: amountTransactionItem } = await ItemTransaction.findOne({
         where: {
           ItemId: barang_id,
@@ -286,7 +302,7 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
           }
         )
       );
-    } else if (transactionData.TransactionType?.id === 20) {
+    } else if (transactionData?.TransactionTypeId === 20) {
       const { amount: amountTransactionItem } = await ItemTransaction.findOne({
         where: {
           ItemId: barang_id,
@@ -438,6 +454,12 @@ const getTransaksi = async (req: Request, res: Response) => {
             model: TransactionType,
           },
         },
+        {
+          model: TransactionPaymentMethod,
+          include: {
+            model: PaymentMethod,
+          },
+        },
       ],
       order: [["transaction_date", "DESC"]],
     });
@@ -445,6 +467,7 @@ const getTransaksi = async (req: Request, res: Response) => {
       .status(200)
       .json({ data, message: "Succesfully get transaction" });
   } catch (error: any) {
+    console.error(error, "Error get transaction");
     return res.status(500).json({
       message: error.message,
       error,
@@ -470,6 +493,12 @@ const getTransaksiById = async (req: Request, res: Response) => {
             model: TransactionType,
           },
         },
+        {
+          model: TransactionPaymentMethod,
+          include: {
+            model: PaymentMethod,
+          },
+        },
       ],
     });
     return res
@@ -484,32 +513,64 @@ const getTransaksiById = async (req: Request, res: Response) => {
 };
 
 const updateTransaksi = async (req: Request, res: Response) => {
-  let { title, tanggal, total, notes, transaksi_id, transaksi_category } =
-    req.body;
+  let {
+    title,
+    tanggal,
+    total,
+    notes,
+    transaksi_id,
+    transaksi_category,
+    paymentMethod,
+    transaksiPaymentMethodId,
+  } = req.body;
 
   try {
-    const data = await Transaction.update(
-      {
-        title,
-        transaction_date: tanggal,
-        nominal:
-          transaksi_category === 19 || transaksi_category === 20
-            ? undefined
-            : total,
-        notes,
-      },
-      {
-        where: {
-          id: transaksi_id,
+    const updateTransaksiPromises = [
+      Transaction.update(
+        {
+          title,
+          transaction_date: tanggal,
+          nominal:
+            transaksi_category === 19 || transaksi_category === 20
+              ? undefined
+              : total,
+          notes,
         },
-        returning: true,
-      }
-    );
+        {
+          where: {
+            id: transaksi_id,
+          },
+          returning: true,
+        }
+      ),
+    ];
+
+    if (paymentMethod) {
+      updateTransaksiPromises.push(
+        TransactionPaymentMethod.upsert({
+          id: transaksiPaymentMethodId,
+          TransactionId: transaksi_id,
+          PaymentMethodId: paymentMethod,
+        })
+      );
+    } else {
+      updateTransaksiPromises.push(
+        TransactionPaymentMethod.destroy({
+          where: {
+            TransactionId: transaksi_id,
+          },
+        })
+      );
+    }
+
+    const data = await Promise.all(updateTransaksiPromises);
+
     return res.status(200).json({
-      data: data[1],
+      data: data[0],
       message: "success",
     });
   } catch (error: any) {
+    console.error(error, "Error update");
     return res.status(500).json({
       message: error.message,
       error,
@@ -531,7 +592,7 @@ const deleteTransaksi = async (req: Request, res: Response) => {
           model: ItemTransaction,
         },
         {
-          model: TransactionType,
+          model: TransactionTransactionType,
         },
       ],
     });
@@ -545,8 +606,8 @@ const deleteTransaksi = async (req: Request, res: Response) => {
     transactionData = JSON.parse(JSON.stringify(transactionData));
 
     if (
-      transactionData.TransactionTypes[0]?.id === 19 ||
-      transactionData.TransactionTypes[0]?.id === 20
+      transactionData.TransactionTransactionType?.TransactionTypeId === 19 ||
+      transactionData.TransactionTransactionType?.TransactionTypeId === 20
     ) {
       const transactionDataItemsPromises = transactionData.ItemTransactions.map(
         (it: ICatetinTransaksiDetail) =>
@@ -554,7 +615,10 @@ const deleteTransaksi = async (req: Request, res: Response) => {
             {
               stock: db.sequelize.literal(
                 `stock ${
-                  transactionData.TransactionTypes[0]?.id === 19 ? "+" : "-"
+                  transactionData.TransactionTransactionType
+                    ?.TransactionTypeId === 19
+                    ? "+"
+                    : "-"
                 } ${Math.abs(it.amount)} `
               ),
             },
@@ -587,6 +651,7 @@ const deleteTransaksi = async (req: Request, res: Response) => {
       message: "Succesfully delete transaksi",
     });
   } catch (err: any) {
+    console.error(err);
     return res.status(500).json({
       message: err.message,
       err,
@@ -609,6 +674,7 @@ const getTransactionSummary = async (req: Request, res: Response) => {
     start_date,
     end_date,
     timezone = "Asia/Jakarta",
+    paymentMethod,
   } = req.query;
 
   let dateQuery = {};
@@ -804,12 +870,27 @@ const getTransactionSummary = async (req: Request, res: Response) => {
       }));
       finalData = (mapGrouped.length > 0 && mapGrouped) || null;
     } else if (report) {
-      finalData = await getTransactionReport(
-        id,
-        dateQuery as {
-          transaction_date: string;
-        }
-      );
+      finalData = await getTransactionReport(id, dateQuery);
+    } else if (paymentMethod) {
+      const data = await PaymentMethod.findAll({
+        attributes: {
+          include: [
+            [
+              db.sequelize.fn(
+                "COUNT",
+                db.sequelize.col("TransactionPaymentMethods.id")
+              ),
+              "paymentCount",
+            ],
+          ],
+        },
+        include: {
+          model: TransactionPaymentMethod,
+          attributes: [],
+        },
+        group: ["PaymentMethod.id"],
+      });
+      finalData = data;
     } else {
       const data = await Transaction.sum("nominal", {
         where: {
@@ -896,14 +977,16 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
       profit: (income || 0) > (outcome || 0) ? true : false,
     };
 
-    console.log(transaction);
-
     const data = {
       storeName: storeData.name || "Catetin Toko",
       from: moment(from).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY"),
       to: moment(to).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY"),
-      incomeReport: transaction.income,
-      outcomeReport: transaction.outcome,
+      incomeReport: transaction?.filter(
+        (data: any) => data.rootType === "income"
+      ),
+      outcomeReport: transaction?.filter(
+        (data: any) => data.rootType === "outcome"
+      ),
       income: Number(income || 0).toLocaleString("id-ID"),
       outcome: Number(outcome || 0).toLocaleString("id-ID"),
       impression,
