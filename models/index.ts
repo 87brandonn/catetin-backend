@@ -37,14 +37,6 @@ if (isProduction) {
   });
 } else {
   sequelize = new Sequelize({ ...databaseOptions, dialect: "postgres" });
-  // sequelize = new Sequelize(DATABASE_URL as string, {
-  //   dialectOptions: {
-  //     ssl: {
-  //       require: true,
-  //       rejectUnauthorized: false,
-  //     },
-  //   },
-  // });
 }
 
 const db: any = {};
