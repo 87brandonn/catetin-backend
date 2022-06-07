@@ -19,6 +19,7 @@ const {
   RefreshToken,
   DeviceToken,
   UserDeviceToken,
+  UserStore,
 } = model;
 
 const validateToken = (req: Request, res: Response, next: NextFunction) => {
@@ -75,11 +76,13 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
       );
 
       const promises = [];
-      promises.push(
+      if (device_token_id) {
         UserDeviceToken.create({
           DeviceTokenId: device_token_id,
           UserId: id,
-        }),
+        });
+      }
+      promises.push(
         RefreshToken.create({
           token: refreshToken,
           UserId: id,
@@ -626,6 +629,153 @@ export const generateVerifyNumber = async (req: Request, res: Response) => {
   }
 };
 
+const autoLoginFromInvitation = async (req: Request, res: Response) => {
+  let { email, device_token_id } = req.body;
+
+  try {
+    let users = await User.findOne({
+      where: {
+        email,
+      },
+    });
+
+    if (!users) {
+      return res.status(400).json({
+        message: "User not found",
+      });
+    }
+
+    const token = signJWT(users.dataValues.id);
+    const refreshToken = jwt.sign(
+      {
+        user_id: users.dataValues.id,
+      },
+      config.server.token.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: "14d",
+      }
+    );
+
+    console.log(token, "RETURNED TOKEN");
+
+    const promises = [];
+    if (device_token_id) {
+      promises.push(
+        UserDeviceToken.create({
+          DeviceTokenId: device_token_id,
+          UserId: users.dataValues.id,
+        })
+      );
+    }
+
+    promises.push(
+      RefreshToken.create({
+        token: refreshToken,
+        UserId: users.dataValues.id,
+      })
+    );
+
+    await Promise.all(promises);
+
+    return res.status(200).json({
+      message: "Auth Successful",
+      token,
+      refreshToken,
+      user: users,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(400).send({
+      message: "An error occured",
+      err,
+    });
+  }
+};
+
+export const registerUserAndStore = async (req: Request, res: Response) => {
+  let { password, email, device_token_id, storeId, displayName } = req.body;
+
+  try {
+    const promises = [];
+    promises.push(
+      User.findOne({
+        where: {
+          email,
+        },
+      })
+    );
+    let [emailData] = await Promise.all(promises);
+
+    emailData = JSON.parse(JSON.stringify(emailData));
+
+    if (!emailData) {
+      const hash = await bcryptjs.hash(password, 10);
+      const { id } = await User.create({
+        username: crypto.randomBytes(16).toString("hex"),
+        password: hash,
+        provider: "catetin",
+        email,
+        verified: false,
+      });
+
+      const token = signJWT(id);
+      const refreshToken = jwt.sign(
+        {
+          user_id: id,
+        },
+        config.server.token.REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "14d",
+        }
+      );
+
+      const promises = [];
+      promises.push(
+        Profile.create({
+          displayName,
+          UserId: id,
+        })
+      );
+      if (device_token_id) {
+        UserDeviceToken.create({
+          DeviceTokenId: device_token_id,
+          UserId: id,
+        });
+      }
+      promises.push(
+        UserStore.create({
+          StoreId: storeId,
+          UserId: id,
+          grant: "employee",
+        })
+      );
+      promises.push(
+        RefreshToken.create({
+          token: refreshToken,
+          UserId: id,
+        })
+      );
+
+      await Promise.all(promises);
+
+      return res.status(200).send({
+        message: "Auth Successful",
+        token,
+        refreshToken,
+        user_id: id,
+      });
+    }
+    return res.status(400).send({
+      message: `Account already exists with this email`,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message,
+      error,
+    });
+  }
+};
+
 export const verifyEmailNumber = async (req: Request, res: Response) => {
   const user_id = res.locals.jwt.user_id;
   const { number } = req.body;
@@ -836,7 +986,9 @@ export default {
   loginGmail,
   updateProfile,
   getProfile,
+  registerUserAndStore,
   updatePassword,
   getRefreshToken,
   logout,
+  autoLoginFromInvitation,
 };

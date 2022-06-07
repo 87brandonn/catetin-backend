@@ -11,12 +11,17 @@ export default (sequelize: Sequelize, DataTypes: any) => {
       User.hasOne(models.Profile);
       User.hasMany(models.VerificationEmailNumber);
       User.hasMany(models.ResetPasswordNumber);
-      User.hasMany(models.Store);
+      User.belongsToMany(models.Store, {
+        through: models.UserStore,
+      });
+      User.hasMany(models.Transaction);
+      User.hasMany(models.Item);
       User.hasMany(models.RefreshToken);
       User.belongsToMany(models.DeviceToken, {
         through: models.UserDeviceToken,
       });
       User.hasMany(models.UserDeviceToken);
+      User.hasMany(models.UserStore);
     }
   }
   User.init(

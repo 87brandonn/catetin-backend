@@ -5,11 +5,19 @@ import models from "../models";
 import * as XLSX from "xlsx";
 import { getOrderQuery } from "./../utils/index";
 
-const { Item, Transaction, ItemItemCategory, ItemCategory, ItemVariants } =
-  models;
+const {
+  Item,
+  Transaction,
+  User,
+  ItemItemCategory,
+  ItemCategory,
+  ItemVariants,
+} = models;
 
 const importCSV = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
+
+  let user_id = res.locals.jwt.user_id;
 
   const workbook = XLSX.read(req.file?.buffer);
   const dataPromises = workbook.SheetNames.map((name) => {
@@ -31,6 +39,7 @@ const importCSV = async (req: Request, res: Response, next: NextFunction) => {
         price: data.Price,
         stock: data.Stok,
         StoreId: id,
+        UserId: user_id,
       })
     );
   });
@@ -43,6 +52,7 @@ const importCSV = async (req: Request, res: Response, next: NextFunction) => {
 
 const insertBarang = async (req: Request, res: Response) => {
   let { name, price, picture, stock = 0, category, variants } = req.body;
+  let user_id = res.locals.jwt.user_id;
   const { id } = req.params;
 
   try {
@@ -55,6 +65,7 @@ const insertBarang = async (req: Request, res: Response) => {
           price,
           picture,
           StoreId: id,
+          UserId: user_id,
         })
       )
     );
@@ -222,6 +233,9 @@ const getListBarang = async (
           model: ItemCategory,
           ...subQueryCategories,
         },
+        {
+          model: User,
+        },
       ],
     });
 
@@ -252,7 +266,11 @@ const getBarangDetail = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { transaksi, category } = req.query;
   const modelQuery: any = {
-    include: [],
+    include: [
+      {
+        model: User,
+      },
+    ],
   };
   if (transaksi) {
     modelQuery.include.push({
