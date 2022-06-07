@@ -158,11 +158,15 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
             }
           );
           const promises = [];
+          if (device_token_id) {
+            promises.push(
+              UserDeviceToken.create({
+                DeviceTokenId: device_token_id,
+                UserId: users.dataValues.id,
+              })
+            );
+          }
           promises.push(
-            UserDeviceToken.create({
-              DeviceTokenId: device_token_id,
-              UserId: users.dataValues.id,
-            }),
             RefreshToken.create({
               token: refreshToken,
               UserId: users.dataValues.id,
@@ -222,11 +226,15 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
       );
 
       const promises = [];
+      if (device_token_id) {
+        promises.push(
+          UserDeviceToken.create({
+            DeviceTokenId: device_token_id,
+            UserId: users.dataValues.id,
+          })
+        );
+      }
       promises.push(
-        UserDeviceToken.create({
-          DeviceTokenId: device_token_id,
-          UserId: id,
-        }),
         RefreshToken.create({
           token: refreshToken,
           UserId: id,
@@ -258,11 +266,15 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
       );
 
       const promises = [];
+      if (device_token_id) {
+        promises.push(
+          UserDeviceToken.create({
+            DeviceTokenId: device_token_id,
+            UserId: users.dataValues.id,
+          })
+        );
+      }
       promises.push(
-        UserDeviceToken.create({
-          DeviceTokenId: device_token_id,
-          UserId: users.id,
-        }),
         RefreshToken.create({
           token: refreshToken,
           UserId: users.id,
@@ -328,11 +340,15 @@ const loginFacebook = async (
         }
       );
       const promises = [];
+      if (device_token_id) {
+        promises.push(
+          UserDeviceToken.create({
+            DeviceTokenId: device_token_id,
+            UserId: users.dataValues.id,
+          })
+        );
+      }
       promises.push(
-        UserDeviceToken.create({
-          DeviceTokenId: device_token_id,
-          UserId: id,
-        }),
         RefreshToken.create({
           token: refreshToken,
           UserId: id,
@@ -363,11 +379,15 @@ const loginFacebook = async (
         }
       );
       const promises = [];
+      if (device_token_id) {
+        promises.push(
+          UserDeviceToken.create({
+            DeviceTokenId: device_token_id,
+            UserId: users.dataValues.id,
+          })
+        );
+      }
       promises.push(
-        UserDeviceToken.create({
-          DeviceTokenId: device_token_id,
-          UserId: users.id,
-        }),
         RefreshToken.create({
           token: refreshToken,
           UserId: users.id,
