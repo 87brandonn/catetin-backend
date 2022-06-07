@@ -8,7 +8,10 @@ export default (sequelize: Sequelize, DataTypes: any) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models: any) {
-      Store.belongsTo(models.User);
+      Store.belongsToMany(models.User, {
+        through: models.UserStore,
+      });
+      Store.hasMany(models.UserStore);
       Store.hasMany(models.Item);
       Store.hasOne(models.Scheduler);
       Store.hasMany(models.Transaction);

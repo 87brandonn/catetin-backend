@@ -9,6 +9,7 @@ export default (sequelize: Sequelize, DataTypes: any) => {
      */
     static associate(models: any) {
       Transaction.belongsTo(models.Store);
+      Transaction.belongsTo(models.User);
       Transaction.belongsToMany(models.Item, {
         through: models.ItemTransaction,
       });

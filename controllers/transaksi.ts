@@ -30,6 +30,7 @@ const {
   TransactionType,
   TransactionPaymentMethod,
   PaymentMethod,
+  UserStore,
 } = model;
 
 const insertTransaksi = async (req: Request, res: Response) => {
@@ -43,18 +44,20 @@ const insertTransaksi = async (req: Request, res: Response) => {
     paymentMethod,
   } = req.body;
 
+  let user_id = res.locals.jwt.user_id;
+
   const { id } = req.params;
 
   try {
     let data = await Transaction.create({
       StoreId: id,
-      nominal:
-        transaksi_category === 19 || transaksi_category === 20 ? 0 : total,
+      nominal: transaksi_category === 1 || transaksi_category === 2 ? 0 : total,
       rootType,
       transaction_date: tanggal,
       title,
       type: null,
       notes,
+      UserId: user_id,
     });
 
     data = JSON.parse(JSON.stringify(data));
@@ -101,8 +104,8 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
 
   try {
     if (
-      transactionData?.TransactionTypeId === 19 ||
-      transactionData?.TransactionTypeId === 20
+      transactionData?.TransactionTypeId === 1 ||
+      transactionData?.TransactionTypeId === 2
     ) {
       let bulkPromises = [];
       bulkPromises = await Promise.all(
@@ -140,7 +143,7 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
           /**
            * Outcome transaction with barang
            */
-          if (transactionData?.TransactionTypeId === 19) {
+          if (transactionData?.TransactionTypeId === 1) {
             promises.push(
               Item.update(
                 {
@@ -153,7 +156,7 @@ const insertTransaksiDetail = async (req: Request, res: Response) => {
                 }
               )
             );
-          } else if (transactionData?.TransactionTypeId === 20) {
+          } else if (transactionData?.TransactionTypeId === 2) {
             promises.push(
               Item.update(
                 {
@@ -211,8 +214,8 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
 
     if (
       !(
-        transactionData?.TransactionTypeId === 19 ||
-        transactionData?.TransactionTypeId === 20
+        transactionData?.TransactionTypeId === 1 ||
+        transactionData?.TransactionTypeId === 2
       )
     ) {
       return res.status(400).send({
@@ -236,7 +239,7 @@ const deleteTransaksiDetail = async (req: Request, res: Response) => {
       Item.update(
         {
           stock: db.sequelize.literal(
-            `stock ${transactionData?.TransactionTypeId === 20 ? "-" : "+"} ${
+            `stock ${transactionData?.TransactionTypeId === 2 ? "-" : "+"} ${
               barangData.amount
             }`
           ),
@@ -281,7 +284,7 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
 
   try {
     const promises = [];
-    if (transactionData?.TransactionTypeId === 19) {
+    if (transactionData?.TransactionTypeId === 1) {
       const { amount: amountTransactionItem } = await ItemTransaction.findOne({
         where: {
           ItemId: barang_id,
@@ -302,7 +305,7 @@ const updateTransaksiDetail = async (req: Request, res: Response) => {
           }
         )
       );
-    } else if (transactionData?.TransactionTypeId === 20) {
+    } else if (transactionData?.TransactionTypeId === 2) {
       const { amount: amountTransactionItem } = await ItemTransaction.findOne({
         where: {
           ItemId: barang_id,
@@ -460,6 +463,9 @@ const getTransaksi = async (req: Request, res: Response) => {
             model: PaymentMethod,
           },
         },
+        {
+          model: User,
+        },
       ],
       order: [["transaction_date", "DESC"]],
     });
@@ -499,6 +505,9 @@ const getTransaksiById = async (req: Request, res: Response) => {
             model: PaymentMethod,
           },
         },
+        {
+          model: User,
+        },
       ],
     });
     return res
@@ -524,6 +533,22 @@ const updateTransaksi = async (req: Request, res: Response) => {
     transaksiPaymentMethodId,
   } = req.body;
 
+  let user_id = res.locals.jwt.user_id;
+
+  let transactionData = await Transaction.findOne({
+    where: {
+      id: transaksi_id,
+    },
+  });
+
+  transactionData = JSON.parse(JSON.stringify(transactionData));
+
+  if (!transactionData?.UserId === user_id) {
+    return res.status(401).send({
+      message: "Not authorized to edit this transaction",
+    });
+  }
+
   try {
     const updateTransaksiPromises = [
       Transaction.update(
@@ -531,7 +556,7 @@ const updateTransaksi = async (req: Request, res: Response) => {
           title,
           transaction_date: tanggal,
           nominal:
-            transaksi_category === 19 || transaksi_category === 20
+            transaksi_category === 1 || transaksi_category === 2
               ? undefined
               : total,
           notes,
@@ -606,8 +631,8 @@ const deleteTransaksi = async (req: Request, res: Response) => {
     transactionData = JSON.parse(JSON.stringify(transactionData));
 
     if (
-      transactionData.TransactionTransactionType?.TransactionTypeId === 19 ||
-      transactionData.TransactionTransactionType?.TransactionTypeId === 20
+      transactionData.TransactionTransactionType?.TransactionTypeId === 1 ||
+      transactionData.TransactionTransactionType?.TransactionTypeId === 2
     ) {
       const transactionDataItemsPromises = transactionData.ItemTransactions.map(
         (it: ICatetinTransaksiDetail) =>
@@ -616,7 +641,7 @@ const deleteTransaksi = async (req: Request, res: Response) => {
               stock: db.sequelize.literal(
                 `stock ${
                   transactionData.TransactionTransactionType
-                    ?.TransactionTypeId === 19
+                    ?.TransactionTypeId === 1
                     ? "+"
                     : "-"
                 } ${Math.abs(it.amount)} `
@@ -914,8 +939,11 @@ const getTransactionSummary = async (req: Request, res: Response) => {
   }
 };
 
-const downloadManualTransactions = async (req: Request, res: Response) => {
+const downloadManualReport = async (req: Request, res: Response) => {
   const { start_date, end_date, store_id } = req.body;
+
+  let user_id = res.locals.jwt.user_id;
+
   try {
     const from = moment(start_date).toISOString();
     const to = moment(end_date).toISOString();
@@ -930,12 +958,17 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
       deleted: false,
     };
 
-    let [transaction, income, outcome, storeData]: [
+    let [transaction, income, outcome, userStoreData]: [
       transaction: any,
       income: number | undefined,
       outcome: number | undefined,
-      storeData: ICatetinStore & {
+      userStoreData: {
+        grant: "owner" | "employee";
+        UserId: number;
+        StoreId: number;
+      } & {
         User: IUser;
+        Store: ICatetinStore;
       }
     ] = await Promise.all([
       getTransactionReport(store_id, {
@@ -953,13 +986,17 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
           ...query,
         },
       }),
-      Store.findOne({
+      UserStore.findOne({
         where: {
-          id: store_id,
+          StoreId: store_id,
+          UserId: user_id,
         },
         include: [
           {
             model: User,
+          },
+          {
+            model: Store,
           },
         ],
       }),
@@ -968,7 +1005,7 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
     transaction = JSON.parse(JSON.stringify(transaction));
     income = JSON.parse(JSON.stringify(income));
     outcome = JSON.parse(JSON.stringify(outcome));
-    storeData = JSON.parse(JSON.stringify(storeData));
+    userStoreData = JSON.parse(JSON.stringify(userStoreData));
 
     const impression = {
       value: Number(Math.abs((income || 0) - (outcome || 0))).toLocaleString(
@@ -978,7 +1015,7 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
     };
 
     const data = {
-      storeName: storeData.name || "Catetin Toko",
+      storeName: userStoreData?.Store?.name || "Catetin Toko",
       from: moment(from).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY"),
       to: moment(to).locale("id").tz("Asia/Jakarta").format("DD MMMM YYYY"),
       incomeReport: transaction?.filter(
@@ -1024,9 +1061,9 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
 
         await transporter.sendMail({
           from: "brandonpardede25@gmail.com",
-          to: storeData.User.email,
+          to: userStoreData?.User?.email,
           subject: "Laporan Keuangan Manual",
-          html: `Hi, ${storeData.User.email}. Berikut adalah laporan keuangan kamu untuk periode ${data.from} s/d ${data.to}. Terimakasih telah menggunakan Catetin!`,
+          html: `Hi, ${userStoreData?.User?.email}. Berikut adalah laporan keuangan kamu untuk periode ${data.from} s/d ${data.to}. Terimakasih telah menggunakan Catetin!`,
           attachments: [
             {
               filename: fileName.replace("financial-report/", ""),
@@ -1035,7 +1072,7 @@ const downloadManualTransactions = async (req: Request, res: Response) => {
           ],
         });
         return res.status(200).send({
-          message: `Manual financial report has been sent succesfully to email ${storeData.User.email} `,
+          message: `Manual financial report has been sent succesfully to email ${userStoreData?.User?.email} `,
         });
       });
   } catch (err) {
@@ -1056,7 +1093,7 @@ export default {
   getTransaksi,
   getTransaksiById,
   updateTransaksi,
-  downloadManualTransactions,
+  downloadManualReport,
   deleteTransaksi,
   deleteTransaksiDetail,
   getTransactionSummary,
