@@ -25,6 +25,19 @@ app.listen(PORT, () => {
    * Also make sure to back up the database first if you wish to change command defined below
    */
 
+  console.log(`Iniating cron jobs...`);
+
+  initJobs()
+    .then(() => {
+      console.log("Succesfully init cron jobs");
+    })
+    .catch((err) => {
+      console.error(
+        "An error occured while initiating jobs... Terminating activity",
+        err
+      );
+    });
+
   // db.sequelize
   //   .sync({
   //     alter:
@@ -32,13 +45,6 @@ app.listen(PORT, () => {
   //   })
   //   .then(() => {
   //     console.log("Connection established, initiating jobs...");
-  //     initJobs().catch((err) => {
-  //       console.error(
-  //         "An error occured while initiating jobs... Terminating activity",
-  //         err
-  //       );
-  //       return;
-  //     });
   //   })
   //   .catch((err: any) => {
   //     console.error(
