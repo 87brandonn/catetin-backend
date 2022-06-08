@@ -233,7 +233,7 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
         promises.push(
           UserDeviceToken.create({
             DeviceTokenId: device_token_id,
-            UserId: users.dataValues.id,
+            UserId: users.id,
           })
         );
       }
@@ -273,7 +273,7 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
         promises.push(
           UserDeviceToken.create({
             DeviceTokenId: device_token_id,
-            UserId: users.dataValues.id,
+            UserId: users.id,
           })
         );
       }
@@ -347,7 +347,7 @@ const loginFacebook = async (
         promises.push(
           UserDeviceToken.create({
             DeviceTokenId: device_token_id,
-            UserId: users.dataValues.id,
+            UserId: users.id,
           })
         );
       }
@@ -386,7 +386,7 @@ const loginFacebook = async (
         promises.push(
           UserDeviceToken.create({
             DeviceTokenId: device_token_id,
-            UserId: users.dataValues.id,
+            UserId: users.id,
           })
         );
       }
@@ -655,8 +655,6 @@ const autoLoginFromInvitation = async (req: Request, res: Response) => {
         expiresIn: "14d",
       }
     );
-
-    console.log(token, "RETURNED TOKEN");
 
     const promises = [];
     if (device_token_id) {
