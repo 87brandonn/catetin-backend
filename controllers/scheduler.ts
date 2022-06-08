@@ -74,9 +74,9 @@ const addScheduler = async (req: Request, res: Response) => {
             include: {
               model: User,
             },
-            // where: {
-            //   grant: "owner",
-            // },
+            where: {
+              grant: "owner",
+            },
           },
         ],
       }),

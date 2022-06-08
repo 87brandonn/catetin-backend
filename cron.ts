@@ -23,9 +23,9 @@ const initJobs = async () => {
                   include: {
                     model: User,
                   },
-                  // where: {
-                  //   grant: "owner",
-                  // },
+                  where: {
+                    grant: "owner",
+                  },
                 },
               ],
             },
