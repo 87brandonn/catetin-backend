@@ -233,7 +233,7 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
         promises.push(
           UserDeviceToken.create({
             DeviceTokenId: device_token_id,
-            UserId: users.id,
+            UserId: id,
           })
         );
       }
@@ -347,7 +347,7 @@ const loginFacebook = async (
         promises.push(
           UserDeviceToken.create({
             DeviceTokenId: device_token_id,
-            UserId: users.id,
+            UserId: id,
           })
         );
       }
