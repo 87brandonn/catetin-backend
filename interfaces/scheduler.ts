@@ -2,7 +2,7 @@ import { ICatetinStore } from "./store";
 import IUser, { IProfile } from "./user";
 
 export default interface IScheduler {
-  UserId: number;
+  StoreId: number;
   createdAt: Date;
   updatedAt: Date;
   id: number;
@@ -17,8 +17,11 @@ export default interface IScheduler {
 
 export type ISchedulerUser = IScheduler & {
   Store: ICatetinStore & {
-    User: IUser & {
-      Profile: IProfile;
-    };
+    UserStores: {
+      UserId: number;
+      StoreId: number;
+      grant: "owner" | "employee";
+      User: IUser;
+    }[];
   };
 };

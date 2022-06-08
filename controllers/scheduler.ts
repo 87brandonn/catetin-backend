@@ -1,11 +1,13 @@
-import { CronJob, CronTime } from "cron";
+import { CronJob } from "cron";
 import { Request, Response } from "express";
-import jobs, { setJobs } from "../cron";
+import jobs from "../cron";
+import { ICatetinStore } from "../interfaces/store";
+import IUser from "../interfaces/user";
 import model from "../models";
 import { getCronTime } from "../utils";
 import { triggerCron } from "../utils/cron";
 
-const { Scheduler, Store, User, Profile } = model;
+const { Scheduler, Store, UserStore } = model;
 
 const getScheduler = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -38,9 +40,19 @@ const addScheduler = async (req: Request, res: Response) => {
     dayOfWeek,
     id: schedulerId,
   } = req.body;
+
   const currentDate = new Date();
   try {
-    let [[data], storeData] = await Promise.all([
+    let [[data], storeData]: [
+      any,
+      ICatetinStore & {
+        UserStores: {
+          UserId: number;
+          StoreId: number;
+          User: IUser;
+        }[];
+      }
+    ] = await Promise.all([
       Scheduler.upsert({
         id: schedulerId,
         StoreId: id,
@@ -58,7 +70,10 @@ const addScheduler = async (req: Request, res: Response) => {
         },
         include: [
           {
-            model: User,
+            model: UserStore,
+            where: {
+              grant: "owner",
+            },
           },
         ],
       }),
@@ -105,12 +120,16 @@ const addScheduler = async (req: Request, res: Response) => {
           )}`,
           async () => {
             try {
-              await triggerCron(
-                storeData.User.id,
-                storeData.id,
-                storeData.User.email,
-                storeData.name,
-                schedule
+              await Promise.all(
+                storeData?.UserStores.map((data: any) => {
+                  return triggerCron(
+                    data.UserId,
+                    storeData.id,
+                    data.User?.email,
+                    storeData.name,
+                    schedule
+                  );
+                })
               );
             } catch (err) {
               console.error(err);
@@ -142,12 +161,16 @@ const addScheduler = async (req: Request, res: Response) => {
           )}`,
           async () => {
             try {
-              await triggerCron(
-                storeData.User.id,
-                storeData.id,
-                storeData.User.email,
-                storeData.name,
-                schedule
+              await Promise.all(
+                storeData?.UserStores.map((data: any) => {
+                  return triggerCron(
+                    data.UserId,
+                    storeData.id,
+                    data.User?.email,
+                    storeData.name,
+                    schedule
+                  );
+                })
               );
             } catch (err) {
               console.error(err);

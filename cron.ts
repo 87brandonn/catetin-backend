@@ -5,7 +5,7 @@ import moment from "moment";
 import { triggerCron } from "./utils/cron";
 import { getCronTime } from "./utils";
 
-const { Scheduler, User, Profile, Store } = models;
+const { Scheduler, User, Profile, Store, UserStore } = models;
 
 let jobs: { id: number; job: CronJob; initDate: string }[] = [];
 
@@ -19,7 +19,10 @@ const initJobs = async () => {
               model: Store,
               include: [
                 {
-                  model: User,
+                  model: UserStore,
+                  where: {
+                    grant: "owner",
+                  },
                 },
               ],
             },
@@ -28,6 +31,7 @@ const initJobs = async () => {
       )
     );
     data.forEach((schedule) => {
+      // schedule.Store?.UserStores.map((data) => {});
       jobs.push({
         id: schedule.Store.id,
         initDate: moment(schedule.lastTrigger).toISOString(),
@@ -47,12 +51,16 @@ const initJobs = async () => {
           )}`,
           async () => {
             try {
-              await triggerCron(
-                schedule.Store.User.id,
-                schedule.Store.id,
-                schedule.Store.User.email,
-                schedule.Store.name,
-                schedule
+              await Promise.all(
+                schedule.Store?.UserStores.map((data) => {
+                  return triggerCron(
+                    data.UserId,
+                    schedule.Store.id,
+                    data.User?.email,
+                    schedule.Store.name,
+                    schedule
+                  );
+                })
               );
             } catch (err) {
               console.error(err);
