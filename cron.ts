@@ -5,7 +5,7 @@ import moment from "moment";
 import { triggerCron } from "./utils/cron";
 import { getCronTime } from "./utils";
 
-const { Scheduler, User, Store, UserStore, UserDevice } = models;
+const { Scheduler, User, Store, UserStore, UserDevice, Device } = models;
 
 let jobs: { id: number; job: CronJob; initDate: string }[] = [];
 
@@ -24,6 +24,11 @@ const initJobs = async () => {
                     model: User,
                     include: {
                       model: UserDevice,
+                      include: {
+                        model: {
+                          Device,
+                        },
+                      },
                     },
                   },
                   where: {

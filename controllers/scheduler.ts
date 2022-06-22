@@ -7,7 +7,7 @@ import model from "../models";
 import { getCronTime } from "../utils";
 import { triggerCron } from "../utils/cron";
 
-const { Scheduler, Store, User, UserStore, UserDevice } = model;
+const { Scheduler, Store, User, UserStore, UserDevice, Device } = model;
 
 const getScheduler = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -85,6 +85,11 @@ const addScheduler = async (req: Request, res: Response) => {
               model: User,
               include: {
                 model: UserDevice,
+                include: {
+                  model: {
+                    Device,
+                  },
+                },
               },
             },
             where: {
