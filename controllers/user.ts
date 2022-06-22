@@ -411,6 +411,7 @@ const loginFacebook = async (
       }`,
     });
   } catch (err: any) {
+    console.error("Error authenticating facebook", err);
     return res.status(500).json({
       message: err.message,
       err,
