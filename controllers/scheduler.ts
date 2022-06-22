@@ -86,9 +86,7 @@ const addScheduler = async (req: Request, res: Response) => {
               include: {
                 model: UserDevice,
                 include: {
-                  model: {
-                    Device,
-                  },
+                  model: Device,
                 },
               },
             },

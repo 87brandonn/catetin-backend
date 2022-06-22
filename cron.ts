@@ -25,9 +25,7 @@ const initJobs = async () => {
                     include: {
                       model: UserDevice,
                       include: {
-                        model: {
-                          Device,
-                        },
+                        model: Device,
                       },
                     },
                   },
