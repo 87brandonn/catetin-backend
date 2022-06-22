@@ -9,7 +9,12 @@ const upload = multer({
 });
 
 router.delete("/:id", extractJWT, controller.deleteBarang);
-router.post("/import/:id", upload.single("file"), controller.importCSV);
+router.post(
+  "/import/:id",
+  extractJWT,
+  upload.single("file"),
+  controller.importCSV
+);
 router.post("/:id", extractJWT, controller.insertBarang);
 router.put("/", extractJWT, controller.updateBarang);
 router.get("/:id/list", extractJWT, controller.getListBarang);
