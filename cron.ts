@@ -60,8 +60,8 @@ const initJobs = async () => {
           async () => {
             try {
               await Promise.all(
-                schedule.Store?.UserStores.map((userStore) => {
-                  return triggerCron(userStore, schedule);
+                schedule.Store?.UserStores.map(async (userStore) => {
+                  return await triggerCron(userStore, schedule);
                 })
               );
             } catch (err) {

@@ -106,7 +106,7 @@ export const triggerCron = async (
   };
 
   const data = {
-    storeName: schedule.Store.name || "Catetin Toko",
+    storeName: schedule.Store?.name || "Catetin Toko",
     from: moment(from)
       .locale("id")
       .tz("Asia/Jakarta")

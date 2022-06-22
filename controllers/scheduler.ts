@@ -125,8 +125,8 @@ const addScheduler = async (req: Request, res: Response) => {
           async () => {
             try {
               await Promise.all(
-                storeData?.UserStores.map((data) => {
-                  return triggerCron(data, schedule);
+                storeData?.UserStores.map(async (data) => {
+                  return await triggerCron(data, schedule);
                 })
               );
             } catch (err) {
