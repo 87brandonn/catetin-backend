@@ -1,24 +1,28 @@
+import moment from "moment";
 import { Model, Sequelize } from "sequelize";
 
 export default (sequelize: Sequelize, DataTypes: any) => {
-  class UserDeviceToken extends Model {
+  class Device extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models: any) {
-      UserDeviceToken.belongsTo(models.DeviceToken);
-      UserDeviceToken.belongsTo(models.User);
-      // define association here
+      Device.belongsToMany(models.User, {
+        through: models.UserDevice,
+      });
+      Device.hasMany(models.UserDevice); // define association here
     }
   }
-  UserDeviceToken.init(
-    {},
+  Device.init(
+    {
+      token: { type: DataTypes.STRING, unique: true },
+    },
     {
       sequelize,
-      modelName: "UserDeviceToken",
+      modelName: "Device",
     }
   );
-  return UserDeviceToken;
+  return Device;
 };

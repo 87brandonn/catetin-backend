@@ -21,7 +21,16 @@ export type ISchedulerUser = IScheduler & {
       UserId: number;
       StoreId: number;
       grant: "owner" | "employee";
-      User: IUser;
+      User: IUser & {
+        UserDevices: {
+          DeviceId: number;
+          UserID: number;
+          Device: {
+            token: string;
+            id: number;
+          };
+        }[];
+      };
     }[];
   };
 };

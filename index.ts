@@ -38,18 +38,18 @@ app.listen(PORT, () => {
       );
     });
 
-  // db.sequelize
-  //   .sync({
-  //     alter:
-  //       true /* DANGEROUS OPERATION, please do not modify it unless you asks for permissions first */,
-  //   })
-  //   .then(() => {
-  //     console.log("Connection established, initiating jobs...");
-  //   })
-  //   .catch((err: any) => {
-  //     console.error(
-  //       err,
-  //       "An error occured while syncing database... Terminating activity"
-  //     );
-  //   });
+  db.sequelize
+    .sync({
+      alter:
+        true /* DANGEROUS OPERATION, please do not modify it unless you asks for permissions first */,
+    })
+    .then(() => {
+      console.log("Connection established");
+    })
+    .catch((err: any) => {
+      console.error(
+        err,
+        "An error occured while syncing database... Terminating activity"
+      );
+    });
 });

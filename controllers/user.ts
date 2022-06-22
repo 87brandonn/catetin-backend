@@ -17,8 +17,8 @@ const {
   VerificationEmailNumber,
   ResetPasswordNumber,
   RefreshToken,
-  DeviceToken,
-  UserDeviceToken,
+  Device,
+  UserDevice,
   UserStore,
 } = model;
 
@@ -77,8 +77,8 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 
       const promises = [];
       if (device_token_id) {
-        UserDeviceToken.create({
-          DeviceTokenId: device_token_id,
+        UserDevice.create({
+          DeviceId: device_token_id,
           UserId: id,
         });
       }
@@ -163,8 +163,8 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
           const promises = [];
           if (device_token_id) {
             promises.push(
-              UserDeviceToken.create({
-                DeviceTokenId: device_token_id,
+              UserDevice.create({
+                DeviceId: device_token_id,
                 UserId: users.dataValues.id,
               })
             );
@@ -231,8 +231,8 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
       const promises = [];
       if (device_token_id) {
         promises.push(
-          UserDeviceToken.create({
-            DeviceTokenId: device_token_id,
+          UserDevice.create({
+            DeviceId: device_token_id,
             UserId: id,
           })
         );
@@ -271,8 +271,8 @@ const loginGmail = async (req: Request, res: Response, next: NextFunction) => {
       const promises = [];
       if (device_token_id) {
         promises.push(
-          UserDeviceToken.create({
-            DeviceTokenId: device_token_id,
+          UserDevice.create({
+            DeviceId: device_token_id,
             UserId: users.id,
           })
         );
@@ -345,8 +345,8 @@ const loginFacebook = async (
       const promises = [];
       if (device_token_id) {
         promises.push(
-          UserDeviceToken.create({
-            DeviceTokenId: device_token_id,
+          UserDevice.create({
+            DeviceId: device_token_id,
             UserId: id,
           })
         );
@@ -384,8 +384,8 @@ const loginFacebook = async (
       const promises = [];
       if (device_token_id) {
         promises.push(
-          UserDeviceToken.create({
-            DeviceTokenId: device_token_id,
+          UserDevice.create({
+            DeviceId: device_token_id,
             UserId: users.id,
           })
         );
@@ -659,8 +659,8 @@ const autoLoginFromInvitation = async (req: Request, res: Response) => {
     const promises = [];
     if (device_token_id) {
       promises.push(
-        UserDeviceToken.create({
-          DeviceTokenId: device_token_id,
+        UserDevice.create({
+          DeviceId: device_token_id,
           UserId: users.dataValues.id,
         })
       );
@@ -735,8 +735,8 @@ export const registerUserAndStore = async (req: Request, res: Response) => {
         })
       );
       if (device_token_id) {
-        UserDeviceToken.create({
-          DeviceTokenId: device_token_id,
+        UserDevice.create({
+          DeviceId: device_token_id,
           UserId: id,
         });
       }
@@ -877,7 +877,7 @@ export const updatePassword = async (req: Request, res: Response) => {
     );
 
     promises.push(
-      UserDeviceToken.destroy({
+      UserDevice.destroy({
         where: {
           UserId: users.dataValues.id,
         },
@@ -946,9 +946,9 @@ export const logout = async (req: Request, res: Response) => {
         )
       );
       promises.push(
-        UserDeviceToken.destroy({
+        UserDevice.destroy({
           where: {
-            DeviceTokenId: device_token_id,
+            DeviceId: device_token_id,
             UserId: refreshTokenData.UserId,
           },
         })

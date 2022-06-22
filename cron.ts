@@ -5,7 +5,7 @@ import moment from "moment";
 import { triggerCron } from "./utils/cron";
 import { getCronTime } from "./utils";
 
-const { Scheduler, User, Store, UserStore } = models;
+const { Scheduler, User, Store, UserStore, UserDevice } = models;
 
 let jobs: { id: number; job: CronJob; initDate: string }[] = [];
 
@@ -22,6 +22,9 @@ const initJobs = async () => {
                   model: UserStore,
                   include: {
                     model: User,
+                    include: {
+                      model: UserDevice,
+                    },
                   },
                   where: {
                     grant: "owner",
@@ -33,36 +36,32 @@ const initJobs = async () => {
         })
       )
     );
+
     data.forEach((schedule) => {
-      // schedule.Store?.UserStores.map((data) => {});
+      const formattedCronTime = `${getCronTime(
+        schedule.minute,
+        schedule.minute,
+        "0"
+      )} ${getCronTime(schedule.hour, schedule.hour, "0")} ${getCronTime(
+        schedule.dayOfMonth,
+        schedule.dayOfMonth,
+        getCronTime(schedule.month, 1, "*")
+      )} ${getCronTime(schedule.month, schedule.month, "*")} ${getCronTime(
+        schedule.dayOfWeek,
+        schedule.dayOfWeek,
+        "*"
+      )}`;
+
       jobs.push({
         id: schedule.Store.id,
         initDate: moment(schedule.lastTrigger).toISOString(),
         job: new CronJob(
-          `${getCronTime(schedule.minute, schedule.minute, "0")} ${getCronTime(
-            schedule.hour,
-            schedule.hour,
-            "0"
-          )} ${getCronTime(
-            schedule.dayOfMonth,
-            schedule.dayOfMonth,
-            getCronTime(schedule.month, 1, "*")
-          )} ${getCronTime(schedule.month, schedule.month, "*")} ${getCronTime(
-            schedule.dayOfWeek,
-            schedule.dayOfWeek,
-            "*"
-          )}`,
+          formattedCronTime,
           async () => {
             try {
               await Promise.all(
-                schedule.Store?.UserStores.map((data) => {
-                  return triggerCron(
-                    data.UserId,
-                    schedule.Store.id,
-                    data.User?.email,
-                    schedule.Store.name,
-                    schedule
-                  );
+                schedule.Store?.UserStores.map((userStore) => {
+                  return triggerCron(userStore, schedule);
                 })
               );
             } catch (err) {

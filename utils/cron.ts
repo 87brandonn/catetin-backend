@@ -1,8 +1,4 @@
-import { getTransactionReport } from "./transaction";
 import { ExpoPushMessage } from "expo-server-sdk";
-import { ICatetinTransaksi } from "./../interfaces/transaksi";
-import { getScheduleType } from "./index";
-import { ISchedulerUser } from "./../interfaces/scheduler";
 import fs from "fs";
 import handlebars from "handlebars";
 import pdf from "html-pdf";
@@ -10,29 +6,42 @@ import moment from "moment-timezone";
 import path from "path";
 import { Op } from "sequelize";
 import { format } from "util";
+import { v1 } from "uuid";
 import { bucket } from "../controllers/media";
 import jobs from "../cron";
-import { default as db, default as models } from "../models";
-import transporter, { mailData } from "../nodemailer";
+import IUser from "../interfaces/user";
+import { default as models } from "../models";
+import transporter from "../nodemailer";
+import { ISchedulerUser } from "./../interfaces/scheduler";
+import { getScheduleType } from "./index";
 import { triggerPushNotification } from "./pushNotification";
-import { v1 } from "uuid";
+import { getTransactionReport } from "./transaction";
 
 handlebars.registerHelper("toLocaleString", (number) => {
   return parseInt(number || "0", 10).toLocaleString("id-ID");
 });
 
-const { Transaction, Scheduler, UserDeviceToken, DeviceToken } = models;
+const { Transaction, Scheduler } = models;
 
 export const triggerCron = async (
-  userId: number,
-  storeId: number,
-  email: string,
-  storeName: string,
+  userStore: {
+    UserId: number;
+    StoreId: number;
+    grant: "owner" | "employee";
+    User: IUser & {
+      UserDevices: {
+        DeviceId: number;
+        UserID: number;
+        Device: {
+          token: string;
+          id: number;
+        };
+      }[];
+    };
+  },
   schedule: ISchedulerUser
 ) => {
-  let messages: ExpoPushMessage[] = [];
-
-  const indexFound = jobs.findIndex((job) => job.id === storeId);
+  const indexFound = jobs.findIndex((job) => job.id === schedule.StoreId);
   const currentDate = new Date();
 
   const previous = getScheduleType(schedule);
@@ -40,7 +49,7 @@ export const triggerCron = async (
   const from = moment(currentDate).subtract(1, previous).toISOString();
   const to = currentDate.toISOString();
   const query = {
-    StoreId: storeId,
+    StoreId: schedule.StoreId,
     transaction_date: {
       [Op.between]: [
         moment(from as string).toDate(),
@@ -50,12 +59,15 @@ export const triggerCron = async (
     deleted: false,
   };
 
-  let [transaction, income, outcome]: [
+  jobs[indexFound].initDate = to;
+
+  let [transaction, income, outcome, scheduleData]: [
     transaction: any,
     income: number | undefined,
-    outcome: number | undefined
+    outcome: number | undefined,
+    scheduleData: any
   ] = await Promise.all([
-    getTransactionReport(storeId, {
+    getTransactionReport(schedule.StoreId, {
       transaction_date: query.transaction_date,
     }),
     Transaction.sum("nominal", {
@@ -70,6 +82,16 @@ export const triggerCron = async (
         ...query,
       },
     }),
+    Scheduler.update(
+      {
+        lastTrigger: currentDate,
+      },
+      {
+        where: {
+          StoreId: schedule.StoreId,
+        },
+      }
+    ),
   ]);
 
   transaction = JSON.parse(JSON.stringify(transaction));
@@ -84,7 +106,7 @@ export const triggerCron = async (
   };
 
   const data = {
-    storeName: storeName || "Catetin Toko",
+    storeName: schedule.Store.name || "Catetin Toko",
     from: moment(from)
       .locale("id")
       .tz("Asia/Jakarta")
@@ -107,103 +129,63 @@ export const triggerCron = async (
   const template = handlebars.compile(source);
   const html = template(data);
 
-  await Scheduler.update(
-    {
-      lastTrigger: currentDate,
-    },
-    {
-      where: {
-        StoreId: storeId,
-      },
-    }
-  );
-
-  if (process.env.NODE_ENV === "production") {
-    pdf
-      .create(html, {
-        format: "A4",
-      })
-      .toBuffer(async (err: any, buffer) => {
-        if (err) {
-          console.error(
-            "An error occured while generating financial report PDF",
-            err
-          );
-          throw new Error(err);
-        }
-        const promises = [];
-        const fileName = `financial-report/LaporanKeuangan-${v1()}-${
-          data.storeName
-        }-${data.from}-${data.to}.pdf`;
-        const file = bucket.file(fileName);
-
-        await file.save(buffer, {
-          contentType: "application/pdf",
-        });
-        await file.makePublic();
-
-        const publicUrl = format(
-          `https://storage.googleapis.com/${bucket.name}/${fileName}`
+  pdf
+    .create(html, {
+      format: "A4",
+    })
+    .toBuffer(async (err: any, buffer) => {
+      if (err) {
+        console.error(
+          "An error occured while generating financial report PDF",
+          err
         );
+        throw new Error(err);
+      }
+      const promises = [];
+      const fileName = `financial-report/LaporanKeuangan-${v1()}-${
+        data.storeName
+      }-${data.from}-${data.to}.pdf`;
+      const file = bucket.file(fileName);
 
-        const deviceData = JSON.parse(
-          JSON.stringify(
-            await UserDeviceToken.findAll({
-              where: {
-                UserId: userId,
-              },
-              include: {
-                model: DeviceToken,
-              },
-            })
-          )
-        );
-
-        deviceData.forEach((device: any) => {
-          if (device?.DeviceToken) {
-            messages.push({
-              to: device.DeviceToken?.token,
-              sound: "default",
-              title: "Laporan Keuangan Otomatis",
-              body: `Laporan keuangan otomatis kamu untuk periode ini telah di kirim ke email ${email}`,
-              data: {
-                withSome: "data",
-              },
-            });
-          }
-        });
-
-        promises.push(
-          transporter.sendMail({
-            from: "brandonpardede25@gmail.com",
-            to: email,
-            subject: "Laporan Keuangan Otomatis",
-            html: `Hi, ${email}. Berikut adalah laporan keuangan kamu untuk periode ini. Terimakasih telah menggunakan Catetin!`,
-            attachments: [
-              {
-                filename: fileName.replace("financial-report/", ""),
-                path: publicUrl,
-              },
-            ],
-          })
-        );
-
-        if (messages.length) {
-          promises.push(triggerPushNotification(messages));
-        }
-
-        await Promise.all(promises);
-
-        console.log(`Financial report has been sent to user ${email}`);
-        jobs[indexFound].initDate = to;
+      await file.save(buffer, {
+        contentType: "application/pdf",
       });
-  } else {
-    jobs[indexFound].initDate = to;
-    console.log(
-      `Jobs finished triggered for user: ${email} from ${from} to ${to}`,
-      `Income : ${data.income}`,
-      `Outcome : ${data.outcome}`,
-      `Store Name : ${data.storeName}`
-    );
-  }
+      await file.makePublic();
+
+      const publicUrl = format(
+        `https://storage.googleapis.com/${bucket.name}/${fileName}`
+      );
+
+      const messages = userStore.User.UserDevices.map((device) => ({
+        to: device.Device.token,
+        sound: "default",
+        title: "Laporan Keuangan Otomatis",
+        body: `Laporan keuangan otomatis kamu untuk periode ini telah di kirim ke email ${userStore.User.email}`,
+      }));
+
+      promises.push(
+        transporter.sendMail({
+          from: "brandonpardede25@gmail.com",
+          to: userStore.User.email,
+          subject: "Laporan Keuangan Otomatis",
+          html: `Hi, ${userStore.User.email}. Berikut adalah laporan keuangan kamu untuk periode ini. Terimakasih telah menggunakan Catetin!`,
+          attachments: [
+            {
+              filename: fileName.replace("financial-report/", ""),
+              path: publicUrl,
+            },
+          ],
+        })
+      );
+
+      if (messages.length) {
+        promises.push(triggerPushNotification(messages as ExpoPushMessage[]));
+      }
+
+      console.log(
+        `Financial report has been sent to user ${userStore.User.email}`
+      );
+
+      return await Promise.all(promises);
+    });
 };

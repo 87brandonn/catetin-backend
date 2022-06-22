@@ -1,26 +1,26 @@
 import { Request, Response } from "express";
 import model from "../models";
 
-const { DeviceToken } = model;
+const { Device } = model;
 
 const registerDevice = async (req: Request, res: Response) => {
   try {
     const { token } = req.body;
 
-    const deviceTokenData = await DeviceToken.findOne({
+    const deviceData = await Device.findOne({
       where: {
         token,
       },
     });
 
-    if (deviceTokenData) {
+    if (deviceData) {
       return res.status(200).send({
-        data: deviceTokenData,
+        data: deviceData,
         message: "Device already registered",
       });
     }
 
-    const data = await DeviceToken.create({
+    const data = await Device.create({
       token,
     });
 

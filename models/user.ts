@@ -17,10 +17,10 @@ export default (sequelize: Sequelize, DataTypes: any) => {
       User.hasMany(models.Transaction);
       User.hasMany(models.Item);
       User.hasMany(models.RefreshToken);
-      User.belongsToMany(models.DeviceToken, {
-        through: models.UserDeviceToken,
+      User.belongsToMany(models.Device, {
+        through: models.UserDevice,
       });
-      User.hasMany(models.UserDeviceToken);
+      User.hasMany(models.UserDevice);
       User.hasMany(models.UserStore);
     }
   }
